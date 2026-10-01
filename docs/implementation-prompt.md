@@ -324,7 +324,7 @@ Record the actual Foundry build and PF2e version for every Quench/manual run. Do
 
 Work in this order. At the end of each milestone, run build, lint, typecheck, and tests, fix failures, update docs, and commit with a descriptive message. A milestone is done only when its listed tests exist and pass (Vitest) or are written and documented for manual runs (Quench).
 
-1. **Foundations:** verify versions and data paths (§0), write `docs/VERIFICATION.md` and versioned schema definitions, scaffold toolchain, `module.json`, localization, and `EncounterBudget` with tests 1, 2, 5, 6, 7.
+1. **Foundations:** verify versions and data paths (§0), add the ORC notice and attribution (§0.2), write `docs/VERIFICATION.md` and versioned schema definitions, scaffold toolchain, `module.json`, localization, and `EncounterBudget` with tests 1, 2, 5, 6, 7.
 2. **Party and catalog:** `PF2eAdapter`, `PartyService`, `CreatureCatalog`, manual mode UI. Tests 3, 4, 8, 25.
 3. **Generator:** `EncounterGenerator` and balanced mode UI. Tests 9, 10.
 4. **Deployment:** `DeploymentService`, preview, placement, combat. Tests 19–23.
