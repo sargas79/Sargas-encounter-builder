@@ -90,7 +90,7 @@ export class PF2eAdapter implements ActorResolver {
         try {
           return fn(partyLevel, partySize, npcLevels, [], { pwol }).totalXP;
         } catch (error) {
-          console.warn("pf2e-encounter-builder | calculateXP cross-check failed", error);
+          console.warn("sargas-encounter-builder | calculateXP cross-check failed", error);
           return null;
         }
       },

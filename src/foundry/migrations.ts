@@ -13,7 +13,10 @@ import { SCHEMA_VERSIONS } from "../core/schemas.js";
 import { getSetting, setSetting } from "./settings.js";
 
 /** Bump when any persisted schema changes; add a step to MIGRATIONS below. */
-export const CURRENT_DATA_VERSION = 1;
+export const CURRENT_DATA_VERSION = 2;
+
+/** Module id used by the 0.1.0 pre-release; its document flags are copied forward once. */
+export const LEGACY_MODULE_ID = "pf2e-encounter-builder";
 
 export type MigrationStep = {
   version: number;
@@ -102,6 +105,47 @@ const MIGRATIONS: MigrationStep[] = [
           await journal.setFlag(MODULE_ID, FLAGS.recipe, result.record);
           changed++;
         }
+      }
+      return { changed };
+    },
+  },
+  {
+    version: 2,
+    description: "Copy document flags from the pf2e-encounter-builder namespace",
+    async run() {
+      let changed = 0;
+      for (const journal of game.journal.contents) {
+        const legacy = journal.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined;
+        if (!legacy || typeof legacy !== "object") continue;
+        const current = (journal.flags?.[MODULE_ID] as Record<string, unknown> | undefined) ?? {};
+        const update: Record<string, unknown> = {};
+        for (const key of [FLAGS.dataJournal, FLAGS.tags, FLAGS.themes, FLAGS.recipe]) {
+          if (legacy[key] !== undefined && current[key] === undefined)
+            update[`flags.${MODULE_ID}.${key}`] = legacy[key];
+        }
+        if (Object.keys(update).length === 0) continue;
+        await journal.update(update);
+        changed++;
+      }
+      for (const table of game.tables.contents) {
+        const legacy = table.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined;
+        if (legacy?.[FLAGS.table] === undefined || table.getFlag(MODULE_ID, FLAGS.table) !== undefined)
+          continue;
+        const results = table.results.contents
+          .filter(
+            (r) =>
+              (r.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined)?.[FLAGS.result] !==
+              undefined,
+          )
+          .map((r) => ({
+            _id: r.id,
+            [`flags.${MODULE_ID}.${FLAGS.result}`]: (r.flags[LEGACY_MODULE_ID] as Record<string, unknown>)[
+              FLAGS.result
+            ],
+          }));
+        await table.update({ [`flags.${MODULE_ID}.${FLAGS.table}`]: legacy[FLAGS.table] });
+        if (results.length) await table.updateEmbeddedDocuments("TableResult", results);
+        changed++;
       }
       return { changed };
     },

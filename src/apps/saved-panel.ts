@@ -83,6 +83,13 @@ export class SavedPanel {
     return true;
   }
 
+  async select(id?: string): Promise<void> {
+    this.selectedId = id ?? null;
+    this.recalculated = null;
+    this.missing = [];
+    await this.app.render({ parts: ["saved"] });
+  }
+
   /** Save the current draft as a new recipe (Build tab shortcut and Saved tab button). */
   async saveCurrent(): Promise<void> {
     if (!isGM() || this.app.state.draft.entries.length === 0) return;

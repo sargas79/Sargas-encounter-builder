@@ -1,100 +1,93 @@
-<div class="peb-settings">
-  <label class="span2"><strong>{{name}}</strong></label>
-  <label>{{localize "pf2e-encounter-builder.editor.formula"}} <input type="text" name="table.formula" value="{{formula}}"> <span class="peb-tags">{{formulaRange}}</span></label>
-  <label>{{localize "pf2e-encounter-builder.editor.mode"}}
-    <select name="table.mode">
-      <option value="range" {{#unless isWeight}}selected{{/unless}}>{{localize "pf2e-encounter-builder.editor.modeRange"}}</option>
-      <option value="weight" {{#if isWeight}}selected{{/if}}>{{localize "pf2e-encounter-builder.editor.modeWeight"}}</option>
-    </select>
-    {{#if isWeight}}<button type="button" data-action="deriveRanges" title="{{localize "pf2e-encounter-builder.editor.deriveHint"}}">{{localize "pf2e-encounter-builder.editor.derive"}}</button>{{/if}}
-  </label>
-  <label>{{localize "pf2e-encounter-builder.editor.checkFormula"}} <input type="text" name="table.checkFormula" value="{{encounterCheck.formula}}" placeholder="1d6"></label>
-  <label>{{localize "pf2e-encounter-builder.editor.checkOccursOn"}} <input type="text" name="table.checkOccursOn" value="{{occursOn}}" placeholder="1"></label>
-  <label>{{localize "pf2e-encounter-builder.editor.tagRegion"}} <input type="text" name="table.tag.region" value="{{tags.region}}"></label>
-  <label>{{localize "pf2e-encounter-builder.editor.tagTerrain"}} <input type="text" name="table.tag.terrain" value="{{tags.terrain}}"></label>
-  <label>{{localize "pf2e-encounter-builder.editor.tagSeason"}} <input type="text" name="table.tag.season" value="{{tags.season}}"></label>
-  <label>{{localize "pf2e-encounter-builder.editor.tagTime"}} <input type="text" name="table.tag.timeOfDay" value="{{tags.timeOfDay}}"></label>
-  <label class="span2">{{localize "pf2e-encounter-builder.editor.notes"}} <input type="text" name="table.notes" value="{{flags.notes}}"></label>
-</div>
-{{#unless replacement}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.editor.noReplacement"}}</div>{{/unless}}
-{{#each tableIssues}}<div class="peb-msg {{#if (eq this.level "error")}}error{{else}}warn{{/if}}">{{this.text}}</div>{{/each}}
-<div class="peb-toolbar">
-  <button type="button" data-action="addRow"><i class="fa-solid fa-plus"></i> {{localize "pf2e-encounter-builder.editor.addRow"}}</button>
-  <button type="button" data-action="validate"><i class="fa-solid fa-check"></i> {{localize "pf2e-encounter-builder.editor.validate"}}</button>
-  <span class="spacer"></span>
-  <button type="button" data-action="save" {{#unless dirty}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk"></i> {{localize "pf2e-encounter-builder.editor.save"}}</button>
-</div>
-<div class="peb-tags">{{localize "pf2e-encounter-builder.editor.dropHint"}}</div>
-<div class="peb-rows">
-{{#each rows}}
-<div class="peb-row {{#if this.invalid}}invalid{{/if}} {{#if this.isNative}}readonly{{/if}}" data-index="{{this.index}}">
-  <div class="peb-inline">
-    {{#if ../isWeight}}
-    <input type="number" name="row.{{this.index}}.weight" value="{{this.weight}}" min="0" title="{{localize "pf2e-encounter-builder.editor.weight"}}" {{#if this.isNative}}disabled{{/if}}>
-    <span class="peb-tags">{{this.range.[0]}}–{{this.range.[1]}}</span>
-    {{else}}
-    <input type="number" name="row.{{this.index}}.lo" value="{{this.range.[0]}}" {{#if this.isNative}}disabled{{/if}}>–<input type="number" name="row.{{this.index}}.hi" value="{{this.range.[1]}}" {{#if this.isNative}}disabled{{/if}}>
-    {{/if}}
+<div class="seb-editor-body">
+  <header class="seb-strip seb-strip-editor">
+    <div class="seb-form-row">
+      <div class="seb-field"><label for="seb-ed-formula">{{localize "sargas-encounter-builder.editor.formula"}}</label><div class="seb-inline"><input id="seb-ed-formula" type="text" name="table.formula" value="{{formula}}"><span class="seb-pill">{{formulaRange}}</span></div></div>
+      <div class="seb-field"><label for="seb-ed-mode">{{localize "sargas-encounter-builder.editor.mode"}}</label><div class="seb-inline"><select id="seb-ed-mode" name="table.mode"><option value="range" {{#unless isWeight}}selected{{/unless}}>{{localize "sargas-encounter-builder.editor.modeRange"}}</option><option value="weight" {{#if isWeight}}selected{{/if}}>{{localize "sargas-encounter-builder.editor.modeWeight"}}</option></select>{{#if isWeight}}<button type="button" class="seb-button seb-button-small" data-action="deriveRanges" data-tooltip="{{localize 'sargas-encounter-builder.editor.deriveHint'}}">{{localize "sargas-encounter-builder.editor.derive"}}</button>{{/if}}</div></div>
+      <div class="seb-field seb-field-short"><label for="seb-ed-check">{{localize "sargas-encounter-builder.editor.checkFormula"}}</label><input id="seb-ed-check" type="text" name="table.checkFormula" value="{{encounterCheck.formula}}" placeholder="1d6"></div>
+      <div class="seb-field seb-field-short"><label for="seb-ed-occurs">{{localize "sargas-encounter-builder.editor.checkOccursOn"}}</label><input id="seb-ed-occurs" type="text" name="table.checkOccursOn" value="{{occursOn}}" placeholder="1"></div>
+    </div>
+    <div class="seb-form-row">
+      <div class="seb-field"><label>{{localize "sargas-encounter-builder.editor.tagRegion"}}</label><input type="text" name="table.tag.region" value="{{tags.region}}"></div>
+      <div class="seb-field"><label>{{localize "sargas-encounter-builder.editor.tagTerrain"}}</label><input type="text" name="table.tag.terrain" value="{{tags.terrain}}"></div>
+      <div class="seb-field"><label>{{localize "sargas-encounter-builder.editor.tagSeason"}}</label><input type="text" name="table.tag.season" value="{{tags.season}}"></div>
+      <div class="seb-field"><label>{{localize "sargas-encounter-builder.editor.tagTime"}}</label><input type="text" name="table.tag.timeOfDay" value="{{tags.timeOfDay}}"></div>
+      <div class="seb-field seb-field-wide"><label>{{localize "sargas-encounter-builder.editor.notes"}}</label><input type="text" name="table.notes" value="{{flags.notes}}"></div>
+    </div>
+  </header>
+  {{#unless replacement}}<div class="seb-note is-warn">{{localize "sargas-encounter-builder.editor.noReplacement"}}</div>{{/unless}}
+  {{#each tableIssues}}<div class="seb-note {{#if (eq this.level "error")}}is-error{{else}}is-warn{{/if}}">{{this.text}}</div>{{/each}}
+  <div class="seb-toolbar">
+    <button type="button" class="seb-button seb-button-small" data-action="addRow"><i class="fa-solid fa-plus"></i> {{localize "sargas-encounter-builder.editor.addRow"}}</button>
+    <button type="button" class="seb-button seb-button-small" data-action="validate"><i class="fa-solid fa-check"></i> {{localize "sargas-encounter-builder.editor.validate"}}</button>
+    <span class="seb-hint">{{localize "sargas-encounter-builder.editor.dropHint"}}</span>
+    <span class="seb-spacer"></span>
+    <button type="button" class="seb-button seb-button-primary seb-button-small" data-action="save" {{#unless dirty}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk"></i> {{localize "sargas-encounter-builder.editor.save"}}</button>
   </div>
-  <div class="peb-row-main">
-    {{#if this.isNative}}
-      <div>{{localize "pf2e-encounter-builder.editor.nativeRow"}}: {{#if this.documentUuid}}@{{this.documentUuid}}{{else}}{{this.text}}{{/if}}</div>
-      <button type="button" data-action="configureRow">{{localize "pf2e-encounter-builder.editor.configure"}}</button>
-    {{else}}
-      <div class="peb-inline">
-        <select name="row.{{this.index}}.kind">{{#each this.kinds}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
-        {{#if this.isNarrative}}<select name="row.{{this.index}}.narrativeKind">{{#each this.narrativeKinds}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{/if}}
-      </div>
-      <input type="text" name="row.{{this.index}}.text" value="{{this.text}}" placeholder="{{localize "pf2e-encounter-builder.editor.textPlaceholder"}}">
-      {{#if this.isCreatures}}
-        {{#each this.creatures}}
-        <div class="peb-creature-line">
-          <input type="text" name="row.{{../index}}.creature.{{this.ci}}.uuid" value="{{this.uuid}}" placeholder="Compendium.… or Actor.…" title="{{this.name}}">
-          <input type="text" name="row.{{../index}}.creature.{{this.ci}}.quantity" value="{{this.quantity}}" placeholder="1d4+1" class="{{#unless this.quantityValid}}invalid{{/unless}}">
-          <button type="button" data-action="removeCreature" data-ci="{{this.ci}}"><i class="fa-solid fa-xmark"></i></button>
+  <div class="seb-rows seb-scroll">
+  {{#each rows}}
+  <div class="seb-card seb-ed-row{{#if this.invalid}} is-invalid{{/if}}{{#if this.isNative}} is-native{{/if}}" data-index="{{this.index}}">
+    <div class="seb-ed-range">
+      {{#if ../isWeight}}
+      <label class="seb-eyebrow">{{localize "sargas-encounter-builder.editor.weight"}}</label>
+      <input type="number" name="row.{{this.index}}.weight" value="{{this.weight}}" min="0" {{#if this.isNative}}disabled{{/if}}>
+      <span class="seb-text-dim">{{this.range.[0]}}–{{this.range.[1]}}</span>
+      {{else}}
+      <label class="seb-eyebrow">{{localize "sargas-encounter-builder.editor.range"}}</label>
+      <div class="seb-inline"><input type="number" name="row.{{this.index}}.lo" value="{{this.range.[0]}}" {{#if this.isNative}}disabled{{/if}}><span>–</span><input type="number" name="row.{{this.index}}.hi" value="{{this.range.[1]}}" {{#if this.isNative}}disabled{{/if}}></div>
+      {{/if}}
+    </div>
+    <div class="seb-ed-main">
+      {{#if this.isNative}}
+        <div class="seb-row-meta"><i class="fa-solid fa-lock"></i> {{localize "sargas-encounter-builder.editor.nativeRow"}}: {{#if this.documentUuid}}<span class="seb-mono">{{this.documentUuid}}</span>{{else}}{{this.text}}{{/if}}</div>
+        <button type="button" class="seb-button seb-button-small" data-action="configureRow"><i class="fa-solid fa-wand-magic-sparkles"></i> {{localize "sargas-encounter-builder.editor.configure"}}</button>
+      {{else}}
+        <div class="seb-inline">
+          <select name="row.{{this.index}}.kind">{{#each this.kinds}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+          {{#if this.isNarrative}}<select name="row.{{this.index}}.narrativeKind">{{#each this.narrativeKinds}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{/if}}
         </div>
-        <div class="peb-tags">{{this.name}}</div>
-        {{/each}}
-        <button type="button" data-action="addCreature"><i class="fa-solid fa-plus"></i> {{localize "pf2e-encounter-builder.editor.addCreature"}}</button>
-      {{/if}}
-      {{#if this.isTable}}
-        <input type="text" name="row.{{this.index}}.tableUuid" value="{{this.flags.tableUuid}}" placeholder="RollTable.…"> <span class="peb-tags">{{this.tableName}}</span>
-      {{/if}}
-      {{#if this.isTemplate}}
-        <input type="text" name="row.{{this.index}}.template.candidates" value="{{this.templateCandidates}}" placeholder="{{localize "pf2e-encounter-builder.editor.templateCandidates"}}">
-        <input type="text" name="row.{{this.index}}.template.traits" value="{{this.templateTraits}}" placeholder="{{localize "pf2e-encounter-builder.editor.templateTraits"}}">
-        <div class="peb-inline">
-          <label>{{localize "pf2e-encounter-builder.generator.relativeMin"}} <input type="number" name="row.{{this.index}}.template.levelMin" value="{{this.template.levelMin}}"></label>
-          <label>{{localize "pf2e-encounter-builder.generator.relativeMax"}} <input type="number" name="row.{{this.index}}.template.levelMax" value="{{this.template.levelMax}}"></label>
-          <select name="row.{{this.index}}.template.composition">
-            <option value="unrestricted" {{#if (eq this.template.composition "unrestricted")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.unrestricted"}}</option>
-            <option value="solo" {{#if (eq this.template.composition "solo")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.solo"}}</option>
-            <option value="pair" {{#if (eq this.template.composition "pair")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.pair"}}</option>
-            <option value="group" {{#if (eq this.template.composition "group")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.group"}}</option>
-            <option value="bossWithSupport" {{#if (eq this.template.composition "bossWithSupport")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.bossWithSupport"}}</option>
-          </select>
-          <select name="row.{{this.index}}.template.threat">
-            <option value="" {{#unless this.template.threat}}selected{{/unless}}>{{localize "pf2e-encounter-builder.editor.templateThreatParty"}}</option>
-            <option value="trivial" {{#if (eq this.template.threat "trivial")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.trivial"}}</option>
-            <option value="low" {{#if (eq this.template.threat "low")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.low"}}</option>
-            <option value="moderate" {{#if (eq this.template.threat "moderate")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.moderate"}}</option>
-            <option value="severe" {{#if (eq this.template.threat "severe")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.severe"}}</option>
-            <option value="extreme" {{#if (eq this.template.threat "extreme")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.extreme"}}</option>
-          </select>
+        <input type="text" name="row.{{this.index}}.text" value="{{this.text}}" placeholder="{{localize 'sargas-encounter-builder.editor.textPlaceholder'}}">
+        {{#if this.isCreatures}}
+          {{#each this.creatures}}
+          <div class="seb-ed-creature">
+            <input type="text" name="row.{{../index}}.creature.{{this.ci}}.uuid" value="{{this.uuid}}" placeholder="Compendium.… / Actor.…" data-tooltip="{{this.name}}">
+            <input type="text" name="row.{{../index}}.creature.{{this.ci}}.quantity" value="{{this.quantity}}" placeholder="1d4+1" class="{{#unless this.quantityValid}}is-invalid{{/unless}}">
+            <span class="seb-row-meta">{{this.name}}</span>
+            <button type="button" class="seb-icon-button seb-icon-danger" data-action="removeCreature" data-ci="{{this.ci}}" data-tooltip="{{localize 'sargas-encounter-builder.build.remove'}}" aria-label="{{localize 'sargas-encounter-builder.build.remove'}}"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          {{/each}}
+          <button type="button" class="seb-button seb-button-small" data-action="addCreature"><i class="fa-solid fa-plus"></i> {{localize "sargas-encounter-builder.editor.addCreature"}}</button>
+        {{/if}}
+        {{#if this.isTable}}<div class="seb-inline"><input type="text" name="row.{{this.index}}.tableUuid" value="{{this.flags.tableUuid}}" placeholder="RollTable.…"><span class="seb-row-meta">{{this.tableName}}</span></div>{{/if}}
+        {{#if this.isTemplate}}
+          <input type="text" name="row.{{this.index}}.template.candidates" value="{{this.templateCandidates}}" placeholder="{{localize 'sargas-encounter-builder.editor.templateCandidates'}}">
+          <input type="text" name="row.{{this.index}}.template.traits" value="{{this.templateTraits}}" placeholder="{{localize 'sargas-encounter-builder.editor.templateTraits'}}">
+          <div class="seb-inline">
+            <label class="seb-row-meta">{{localize "sargas-encounter-builder.generator.relativeMin"}} <input type="number" name="row.{{this.index}}.template.levelMin" value="{{this.template.levelMin}}"></label>
+            <label class="seb-row-meta">{{localize "sargas-encounter-builder.generator.relativeMax"}} <input type="number" name="row.{{this.index}}.template.levelMax" value="{{this.template.levelMax}}"></label>
+            <select name="row.{{this.index}}.template.composition">
+              {{#each this.compositions}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}
+            </select>
+            <select name="row.{{this.index}}.template.threat">
+              <option value="" {{#unless this.template.threat}}selected{{/unless}}>{{localize "sargas-encounter-builder.editor.templateThreatParty"}}</option>
+              {{#each this.threatOptions}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}
+            </select>
+          </div>
+        {{/if}}
+        <div class="seb-inline">
+          <input type="text" name="row.{{this.index}}.notes" value="{{this.flags.notes}}" placeholder="{{localize 'sargas-encounter-builder.editor.rowNotes'}}">
+          <input type="text" name="row.{{this.index}}.journalUuid" value="{{this.flags.journalUuid}}" placeholder="{{localize 'sargas-encounter-builder.editor.journal'}}">
         </div>
       {{/if}}
-      <input type="text" name="row.{{this.index}}.notes" value="{{this.flags.notes}}" placeholder="{{localize "pf2e-encounter-builder.editor.rowNotes"}}">
-      <input type="text" name="row.{{this.index}}.journalUuid" value="{{this.flags.journalUuid}}" placeholder="{{localize "pf2e-encounter-builder.editor.journal"}}">
-    {{/if}}
-    {{#each this.issues}}<div class="peb-validation">{{this.text}}</div>{{/each}}
+      {{#each this.issues}}<div class="seb-note {{#if (eq this.level "error")}}is-error{{else}}is-warn{{/if}} is-inline">{{this.text}}</div>{{/each}}
+    </div>
+    <div class="seb-ed-actions">
+      <button type="button" class="seb-icon-button" data-action="moveUp" data-tooltip="{{localize 'sargas-encounter-builder.editor.moveUp'}}" aria-label="{{localize 'sargas-encounter-builder.editor.moveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+      <button type="button" class="seb-icon-button" data-action="moveDown" data-tooltip="{{localize 'sargas-encounter-builder.editor.moveDown'}}" aria-label="{{localize 'sargas-encounter-builder.editor.moveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+      <button type="button" class="seb-icon-button seb-icon-danger" data-action="removeRow" data-tooltip="{{localize 'sargas-encounter-builder.editor.removeRow'}}" aria-label="{{localize 'sargas-encounter-builder.editor.removeRow'}}"><i class="fa-solid fa-trash"></i></button>
+    </div>
   </div>
-  <div class="peb-row-actions">
-    <button type="button" data-action="moveUp" title="{{localize "pf2e-encounter-builder.editor.moveUp"}}"><i class="fa-solid fa-arrow-up"></i></button>
-    <button type="button" data-action="moveDown" title="{{localize "pf2e-encounter-builder.editor.moveDown"}}"><i class="fa-solid fa-arrow-down"></i></button>
-    <button type="button" data-action="removeRow" title="{{localize "pf2e-encounter-builder.editor.removeRow"}}"><i class="fa-solid fa-trash"></i></button>
+  {{else}}
+  <div class="seb-empty"><i class="fa-solid fa-table-list"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.editor.noRows"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.editor.noRowsHint"}}</p><button type="button" class="seb-button seb-button-primary" data-action="addRow"><i class="fa-solid fa-plus"></i> {{localize "sargas-encounter-builder.editor.addRow"}}</button></div>
+  {{/each}}
   </div>
-</div>
-{{else}}
-<div class="peb-msg">{{localize "pf2e-encounter-builder.editor.noRows"}}</div>
-{{/each}}
 </div>

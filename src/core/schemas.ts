@@ -144,7 +144,17 @@ export interface GenerationTemplate {
   threat: ThreatLevel | null;
 }
 
-export type CompositionPreference = "unrestricted" | "solo" | "pair" | "group" | "bossWithSupport";
+export type CompositionPreference =
+  "unrestricted" | "solo" | "pair" | "group" | "bossWithSupport" | "warband" | "mixedPatrol";
+export const COMPOSITION_PREFERENCES: readonly CompositionPreference[] = [
+  "unrestricted",
+  "solo",
+  "pair",
+  "group",
+  "bossWithSupport",
+  "warband",
+  "mixedPatrol",
+];
 
 export interface ResultFlagsV1 {
   schemaVersion: 1;
@@ -190,7 +200,7 @@ const isBool = (v: unknown): v is boolean => typeof v === "boolean";
 const THREATS: readonly string[] = ["trivial", "low", "moderate", "severe", "extreme"];
 const POLICIES: readonly string[] = ["uniform", "averageFloor", "highest", "lowest", "manual"];
 const RESULT_KINDS: readonly string[] = ["creatures", "table", "narrative", "none", "template"];
-const COMPOSITIONS: readonly string[] = ["unrestricted", "solo", "pair", "group", "bossWithSupport"];
+const COMPOSITIONS: readonly string[] = COMPOSITION_PREFERENCES;
 
 export function validatePartyProfile(raw: unknown): ValidationResult<PartyProfile> {
   const errors: string[] = [];
@@ -337,4 +347,50 @@ export function emptyResultFlags(kind: ResultKind = "narrative"): ResultFlags {
 
 export function emptyTagStore(): TagStore {
   return { schemaVersion: 1, entries: [] };
+}
+
+/* -------------------------------------------- */
+/*  Custom themes (module data JournalEntry)    */
+/* -------------------------------------------- */
+
+export interface CustomThemeRecord {
+  id: string;
+  name: string;
+  requiredTraits: string[];
+  anyTraits: string[];
+  environment: string | null;
+  candidateUuids: string[];
+  notes: string;
+}
+
+export interface ThemeStoreV1 {
+  schemaVersion: 1;
+  themes: CustomThemeRecord[];
+}
+
+export function validateThemeStore(raw: unknown): ValidationResult<ThemeStoreV1> {
+  const errors: string[] = [];
+  if (!isObject(raw)) return { ok: false, errors: ["not an object"] };
+  if (raw.schemaVersion !== 1) errors.push(`unsupported schemaVersion ${String(raw.schemaVersion)}`);
+  if (!Array.isArray(raw.themes)) errors.push("themes missing");
+  else {
+    raw.themes.forEach((t, i) => {
+      if (
+        !isObject(t) ||
+        !isString(t.id) ||
+        !isString(t.name) ||
+        !Array.isArray(t.requiredTraits) ||
+        !Array.isArray(t.anyTraits) ||
+        !Array.isArray(t.candidateUuids) ||
+        (t.environment !== null && !isString(t.environment)) ||
+        !isString(t.notes)
+      )
+        errors.push(`themes[${i}] invalid`);
+    });
+  }
+  return errors.length ? { ok: false, errors } : { ok: true, value: raw as unknown as ThemeStoreV1 };
+}
+
+export function emptyThemeStore(): ThemeStoreV1 {
+  return { schemaVersion: 1, themes: [] };
 }

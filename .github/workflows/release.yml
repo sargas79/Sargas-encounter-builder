@@ -27,20 +27,18 @@ jobs:
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           VERSION="${TAG#v}"
-          jq --arg v "$VERSION" --arg tag "$TAG" \
-            '.version = $v | .download = "https://github.com/sargas79/Sargas-encounter-builder/releases/download/\($tag)/pf2e-encounter-builder.zip"' \
-            module.json > module.json.tmp && mv module.json.tmp module.json
+          jq --arg v "$VERSION" '.version = $v' module.json > module.json.tmp && mv module.json.tmp module.json
           cat module.json
       - name: Package module
         run: |
-          mkdir -p package/pf2e-encounter-builder
-          cp -r module.json dist lang styles templates LICENSE LICENSE-ORC.md README.md package/pf2e-encounter-builder/
-          (cd package && zip -r ../pf2e-encounter-builder.zip pf2e-encounter-builder)
+          mkdir -p package/sargas-encounter-builder
+          cp -r module.json dist lang styles templates LICENSE LICENSE-ORC.md README.md package/sargas-encounter-builder/
+          (cd package && zip -r ../sargas-encounter-builder.zip sargas-encounter-builder)
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           name: ${{ inputs.tag || github.ref_name }}
           generate_release_notes: true
           files: |
-            pf2e-encounter-builder.zip
+            sargas-encounter-builder.zip
             module.json

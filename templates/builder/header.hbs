@@ -1,16 +1,33 @@
-<div class="peb-header">
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.party"}}</label><span class="value">{{header.partyName}}</span> <span class="peb-tags">{{header.source}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.participating"}}</label><span class="value">{{header.participating}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.levels"}}</label><span class="value">{{header.levels}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.reference"}}</label><span class="value">{{header.referenceLevel}}</span> <span class="peb-tags">{{header.policy}}{{#if header.isEstimate}} ({{localize "pf2e-encounter-builder.party.estimate"}}){{/if}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.threat"}}</label><span class="value">{{header.threat}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.target"}}</label><span class="value">{{header.target}} XP</span></div>
-  {{#if header.pwol}}
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.variant"}}</label><span class="value">{{#if header.systemCalculation}}{{localize "pf2e-encounter-builder.evaluation.pwolSystem"}}{{else}}{{localize "pf2e-encounter-builder.evaluation.pwolUnsupported"}}{{/if}}</span></div>
-  {{/if}}
-</div>
-{{#if messages.length}}
-<div class="peb-messages">
-  {{#each messages}}<div class="peb-msg {{this.level}}">{{this.text}}</div>{{/each}}
-</div>
+{{!-- Party strip: who is fighting, at what level, against which threat. Always visible. --}}
+<header class="seb-strip">
+  <div class="seb-strip-party">
+    <span class="seb-eyebrow">{{localize "sargas-encounter-builder.header.party"}}</span>
+    <div class="seb-strip-row">
+      <button type="button" class="seb-party-button" data-action="changeParty" data-tooltip="{{localize 'sargas-encounter-builder.header.changeParty'}}">
+        <i class="fa-solid fa-users"></i>
+        <span class="seb-party-name">{{header.partyName}}</span>
+        {{#if header.sourceLabel}}<span class="seb-pill">{{header.sourceLabel}}</span>{{/if}}
+        <i class="fa-solid fa-chevron-down seb-party-caret"></i>
+      </button>
+      {{#if header.hasParty}}
+      <span class="seb-stat" data-tooltip="{{localize 'sargas-encounter-builder.header.participating'}}"><i class="fa-solid fa-user-group"></i> {{header.participating}}</span>
+      <span class="seb-stat" data-tooltip="{{localize 'sargas-encounter-builder.header.levels'}}"><i class="fa-solid fa-signal"></i> {{header.levels}}</span>
+      <span class="seb-stat" data-tooltip="{{localize 'sargas-encounter-builder.header.reference'}}{{#if header.policy}} · {{header.policy}}{{/if}}"><i class="fa-solid fa-bullseye"></i> {{localize "sargas-encounter-builder.header.referenceShort"}} {{header.referenceLevel}}{{#if header.isEstimate}}<sup>*</sup>{{/if}}</span>
+      {{#if header.missing}}<span class="seb-stat is-warn" data-tooltip="{{localize 'sargas-encounter-builder.header.missingTooltip'}}"><i class="fa-solid fa-triangle-exclamation"></i> {{header.missing}}</span>{{/if}}
+      {{/if}}
+    </div>
+  </div>
+  <div class="seb-strip-threat">
+    <span class="seb-eyebrow">{{localize "sargas-encounter-builder.header.threat"}}{{#if header.target}} <span class="seb-eyebrow-value">{{header.target}} XP</span>{{/if}}</span>
+    <div class="seb-segments" role="group" aria-label="{{localize 'sargas-encounter-builder.header.threat'}}">
+      {{#each header.threats}}
+      <button type="button" class="seb-segment{{#if this.active}} is-active{{/if}}" data-action="setThreat" data-value="{{this.value}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}" data-tooltip="{{this.target}}" {{#if this.disabled}}disabled{{/if}}>{{this.label}}</button>
+      {{/each}}
+    </div>
+  </div>
+</header>
+{{#if header.pwol}}
+<div class="seb-note {{#if header.variantUnsupported}}is-warn{{/if}}"><i class="fa-solid fa-flask"></i> {{#if header.systemCalculation}}{{localize "sargas-encounter-builder.evaluation.pwolSystem"}}{{else}}{{localize "sargas-encounter-builder.evaluation.pwolUnsupported"}}{{/if}}</div>
 {{/if}}
+{{#each header.blockers}}<div class="seb-note is-error"><i class="fa-solid fa-circle-exclamation"></i> {{this}}</div>{{/each}}
+{{#each messages}}<div class="seb-note is-{{this.level}}">{{this.text}}</div>{{/each}}

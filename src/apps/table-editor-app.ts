@@ -6,12 +6,14 @@
 import { MODULE_ID } from "../constants.js";
 import { validateFormula } from "../core/dice-grammar.js";
 import {
+  COMPOSITION_PREFERENCES,
   emptyResultFlags,
   type NarrativeKind,
   type ResultFlags,
   type ResultKind,
   type TableFlags,
 } from "../core/schemas.js";
+import { THREAT_LEVELS } from "../core/budget.js";
 import {
   NARRATIVE_KINDS,
   RESULT_KINDS,
@@ -52,10 +54,10 @@ export class EncounterTableEditor extends Base {
 
   static DEFAULT_OPTIONS = {
     id: `${MODULE_ID}-table-editor-{id}`,
-    classes: ["pf2e-encounter-table-editor"],
+    classes: ["seb", "seb-editor"],
     tag: "div",
     window: { title: `${MODULE_ID}.editor.title`, icon: "fa-solid fa-table-list", resizable: true },
-    position: { width: 820, height: 700 },
+    position: { width: 860, height: 720 },
     actions: {
       addRow: EncounterTableEditor.#onAddRow,
       removeRow: EncounterTableEditor.#onRemoveRow,
@@ -71,7 +73,7 @@ export class EncounterTableEditor extends Base {
   };
 
   static PARTS = {
-    form: { template: `modules/${MODULE_ID}/templates/table-editor.hbs`, scrollable: [".peb-rows"] },
+    form: { template: `modules/${MODULE_ID}/templates/table-editor.hbs`, scrollable: [".seb-rows"] },
   };
 
   tableUuid: string;
@@ -244,6 +246,16 @@ export class EncounterTableEditor extends Base {
           .map((uuid) => this.#names.get(uuid) ?? uuid)
           .join(", "),
         templateTraits: row.flags?.template?.traits.join(", ") ?? "",
+        compositions: COMPOSITION_PREFERENCES.map((value) => ({
+          value,
+          label: t(`generator.composition.${value}`),
+          selected: (row.flags?.template?.composition ?? "unrestricted") === value,
+        })),
+        threatOptions: THREAT_LEVELS.map((value) => ({
+          value,
+          label: t(`threat.${value}`),
+          selected: row.flags?.template?.threat === value,
+        })),
         issues: (issuesByRow.get(row.key) ?? []).map(describe),
         invalid: (issuesByRow.get(row.key) ?? []).some((i) => i.level === "error"),
       })),
@@ -260,7 +272,7 @@ export class EncounterTableEditor extends Base {
     const DragDrop = DragDropClass();
     if (DragDrop) {
       new DragDrop({
-        dropSelector: ".peb-row",
+        dropSelector: ".seb-ed-row",
         permissions: { dragstart: () => false, drop: () => isGM() },
         callbacks: { drop: (event: DragEvent) => void this.#onDrop(event) },
       }).bind(root);
@@ -397,7 +409,7 @@ export class EncounterTableEditor extends Base {
 
   async #onDrop(event: DragEvent): Promise<void> {
     const data = getDragEventData(event);
-    const rowEl = (event.target as HTMLElement).closest<HTMLElement>(".peb-row");
+    const rowEl = (event.target as HTMLElement).closest<HTMLElement>(".seb-ed-row");
     const row = rowEl ? this.rows[Number(rowEl.dataset.index)] : undefined;
     if (!row || typeof data.uuid !== "string") return;
     if (!row.flags) row.flags = { ...emptyResultFlags("narrative"), notes: "" };
@@ -440,7 +452,7 @@ export class EncounterTableEditor extends Base {
   }
 
   static async #onRemoveRow(this: EncounterTableEditor, _event: Event, target: HTMLElement): Promise<void> {
-    const index = Number(target.closest<HTMLElement>(".peb-row")?.dataset.index);
+    const index = Number(target.closest<HTMLElement>(".seb-ed-row")?.dataset.index);
     const row = this.rows[index];
     if (!row) return;
     if (row.id) this.deleteIds.push(row.id);
@@ -451,7 +463,7 @@ export class EncounterTableEditor extends Base {
   }
 
   static async #onMoveRow(this: EncounterTableEditor, _event: Event, target: HTMLElement): Promise<void> {
-    const index = Number(target.closest<HTMLElement>(".peb-row")?.dataset.index);
+    const index = Number(target.closest<HTMLElement>(".seb-ed-row")?.dataset.index);
     const delta = target.dataset.action === "moveUp" ? -1 : 1;
     const other = index + delta;
     if (!this.rows[index] || !this.rows[other]) return;
@@ -465,7 +477,7 @@ export class EncounterTableEditor extends Base {
     _event: Event,
     target: HTMLElement,
   ): Promise<void> {
-    const row = this.rows[Number(target.closest<HTMLElement>(".peb-row")?.dataset.index)];
+    const row = this.rows[Number(target.closest<HTMLElement>(".seb-ed-row")?.dataset.index)];
     if (!row || row.flags) return;
     row.flags = emptyResultFlags("narrative");
     if (row.documentUuid?.includes("RollTable")) {
@@ -481,7 +493,7 @@ export class EncounterTableEditor extends Base {
   }
 
   static async #onAddCreature(this: EncounterTableEditor, _event: Event, target: HTMLElement): Promise<void> {
-    const row = this.rows[Number(target.closest<HTMLElement>(".peb-row")?.dataset.index)];
+    const row = this.rows[Number(target.closest<HTMLElement>(".seb-ed-row")?.dataset.index)];
     if (!row?.flags) return;
     row.flags.creatures.push({ uuid: "", quantity: "1" });
     this.dirty = true;
@@ -493,7 +505,7 @@ export class EncounterTableEditor extends Base {
     _event: Event,
     target: HTMLElement,
   ): Promise<void> {
-    const row = this.rows[Number(target.closest<HTMLElement>(".peb-row")?.dataset.index)];
+    const row = this.rows[Number(target.closest<HTMLElement>(".seb-ed-row")?.dataset.index)];
     const ci = Number(target.dataset.ci);
     if (!row?.flags) return;
     row.flags.creatures.splice(ci, 1);

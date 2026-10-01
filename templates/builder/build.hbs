@@ -1,105 +1,97 @@
-<section class="tab {{#if (eq activeTab "build")}}active{{/if}}" data-tab="build" data-group="primary">
-  <div class="peb-columns">
-    <div class="peb-panel">
-      <h3>{{localize "pf2e-encounter-builder.build.catalog"}}</h3>
-      <details class="peb-packs" {{#if build.noPacks}}open{{/if}}>
-        <summary>{{localize "pf2e-encounter-builder.build.packs"}} <button type="button" data-action="refreshCatalog" {{#if busy}}disabled{{/if}}><i class="fa-solid fa-rotate"></i></button></summary>
-        {{#each build.packs}}
-        <label><input type="checkbox" name="pack" data-pack-id="{{this.id}}" {{#if this.selected}}checked{{/if}} {{#unless this.accessible}}disabled{{/unless}}> {{this.label}} <span class="peb-tags">({{this.packageName}}) {{this.stateLabel}}</span></label>
-        {{/each}}
-        {{#each build.missingPacks}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.build.packState.missingId" id=this}}</div>{{/each}}
-      </details>
-      <div class="peb-filters">
-        <label class="span2">{{localize "pf2e-encounter-builder.build.search"}} <input type="search" name="filter.search" value="{{build.filter.search}}" placeholder="{{localize "pf2e-encounter-builder.build.searchPlaceholder"}}"></label>
-        <label>{{localize "pf2e-encounter-builder.build.levelMin"}} <input type="number" name="filter.levelMin" value="{{build.filter.levelMin}}"></label>
-        <label>{{localize "pf2e-encounter-builder.build.levelMax"}} <input type="number" name="filter.levelMax" value="{{build.filter.levelMax}}"></label>
-        <label>{{localize "pf2e-encounter-builder.build.relativeMin"}} <input type="number" name="filter.relativeMin" value="{{build.filter.relativeMin}}"></label>
-        <label>{{localize "pf2e-encounter-builder.build.relativeMax"}} <input type="number" name="filter.relativeMax" value="{{build.filter.relativeMax}}"></label>
-        <label>{{localize "pf2e-encounter-builder.build.traits"}} <input type="text" name="filter.traits" value="{{build.traits}}" placeholder="undead, fire"></label>
-        <label>{{localize "pf2e-encounter-builder.build.tags"}} <input type="text" name="filter.tags" value="{{build.tags}}" list="peb-tag-list" placeholder="environment:forest"></label>
-        <datalist id="peb-tag-list">{{#each build.allTags}}<option value="{{this}}"></option>{{/each}}</datalist>
-        <label>{{localize "pf2e-encounter-builder.build.rarity"}}
-          <select name="filter.rarity"><option value="">—</option><option value="common">common</option><option value="uncommon">uncommon</option><option value="rare">rare</option><option value="unique">unique</option></select>
-        </label>
+<section class="seb-tab" data-tab="build">
+  {{#unless ready}}
+  <div class="seb-empty seb-gate"><i class="fa-solid fa-lock"></i><p class="seb-empty-title">{{gate.title}}</p><p class="seb-empty-hint">{{gate.hint}}</p><button type="button" class="seb-button seb-button-primary" data-action="changeParty"><i class="fa-solid fa-dragon"></i> {{localize "sargas-encounter-builder.party.startDialog"}}</button></div>
+  {{else}}
+  <div class="seb-columns">
+    <div class="seb-panel">
+      <div class="seb-panel-head">
+        <div class="seb-segments" role="group" aria-label="{{localize 'sargas-encounter-builder.build.modeLabel'}}">
+          <button type="button" class="seb-segment{{#if build.isGenerate}} is-active{{/if}}" data-action="setBuildMode" data-value="generate" aria-pressed="{{#if build.isGenerate}}true{{else}}false{{/if}}"><i class="fa-solid fa-dice"></i> {{localize "sargas-encounter-builder.build.modeGenerate"}}</button>
+          <button type="button" class="seb-segment{{#if build.isBrowse}} is-active{{/if}}" data-action="setBuildMode" data-value="browse" aria-pressed="{{#if build.isBrowse}}true{{else}}false{{/if}}"><i class="fa-solid fa-magnifying-glass"></i> {{localize "sargas-encounter-builder.build.modeBrowse"}}</button>
+        </div>
+        <span class="seb-panel-actions">
+          <details class="seb-popover">
+            <summary class="seb-button seb-button-small" data-tooltip="{{localize 'sargas-encounter-builder.build.packs'}}"><i class="fa-solid fa-book"></i> {{build.packCount}}</summary>
+            <div class="seb-popover-body">
+              <div class="seb-group-header"><span>{{localize "sargas-encounter-builder.build.packs"}}</span><button type="button" class="seb-icon-button" data-action="refreshCatalog" data-tooltip="{{localize 'sargas-encounter-builder.build.refresh'}}" aria-label="{{localize 'sargas-encounter-builder.build.refresh'}}" {{#if busy}}disabled{{/if}}><i class="fa-solid fa-rotate"></i></button></div>
+              {{#each build.packs}}
+              <label class="seb-checkbox"><input type="checkbox" name="pack" data-pack-id="{{this.id}}" {{#if this.selected}}checked{{/if}} {{#unless this.accessible}}disabled{{/unless}}> <span>{{this.label}} <span class="seb-text-dim">· {{this.packageName}} · {{this.stateLabel}}</span></span></label>
+              {{/each}}
+              {{#each build.missingPacks}}<div class="seb-note is-warn">{{localize "sargas-encounter-builder.build.packState.missingId" id=this}}</div>{{/each}}
+            </div>
+          </details>
+        </span>
       </div>
-      <div class="peb-scroll">
-        {{#if busy}}<div class="peb-msg">{{localize "pf2e-encounter-builder.build.loading"}}</div>{{/if}}
-        {{#if build.noPacks}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.build.noPacks"}}</div>{{/if}}
-        <table class="peb-table">
-          <thead><tr><th></th><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.level"}}</th><th class="num">±</th><th>{{localize "pf2e-encounter-builder.build.traits"}}</th><th></th></tr></thead>
-          <tbody>
-          {{#each build.results}}
-          <tr data-uuid="{{this.uuid}}">
-            <td>{{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}</td>
-            <td>{{this.name}}<div class="peb-tags">{{this.packLabel}}{{#if this.tagsLabel}} · {{this.tagsLabel}}{{/if}}</div></td>
-            <td class="num">{{this.level}}</td>
-            <td class="num">{{#if (ne this.relative null)}}{{this.relative}}{{/if}}</td>
-            <td><span class="peb-tags">{{this.traitsLabel}}</span></td>
-            <td class="actions">
-              <button type="button" data-action="addCreature" title="{{localize "pf2e-encounter-builder.build.add"}}"><i class="fa-solid fa-plus"></i></button>
-              <button type="button" data-action="inspectCreature" title="{{localize "pf2e-encounter-builder.build.inspect"}}"><i class="fa-solid fa-eye"></i></button>
-              <button type="button" data-action="editTags" title="{{localize "pf2e-encounter-builder.build.editTags"}}"><i class="fa-solid fa-tag"></i></button>
-              <button type="button" data-action="ext" data-ext="generator" data-method="exclude" title="{{localize "pf2e-encounter-builder.generator.exclude"}}"><i class="fa-solid fa-ban"></i></button>
-            </td>
-          </tr>
-          {{else}}
-          <tr><td colspan="6">{{#unless busy}}{{localize "pf2e-encounter-builder.build.noResults"}}{{/unless}}</td></tr>
-          {{/each}}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="peb-panel">
-      <h3>{{localize "pf2e-encounter-builder.build.encounter"}} ({{build.draftCount}})</h3>
-      <div class="peb-dropzone" data-purpose="draft">{{localize "pf2e-encounter-builder.build.dropHint"}}</div>
-      <div class="peb-scroll">
-        <table class="peb-table">
-          <thead><tr><th></th><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.level"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.qty"}}</th><th class="num">XP</th><th class="num">Σ</th><th></th></tr></thead>
-          <tbody>
-          {{#each build.draft}}
-          <tr data-uuid="{{this.uuid}}" class="{{#if this.locked}}locked{{/if}}">
-            <td>{{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}</td>
-            <td>{{this.name}} {{#if this.statusLabel}}<span class="status-{{this.status}}">{{this.statusLabel}}</span>{{/if}}<div class="peb-tags">{{this.packLabel}}</div></td>
-            <td class="num">{{this.level}}{{#if (ne this.relative null)}} ({{this.relative}}){{/if}}</td>
-            <td class="num"><input type="number" name="quantity" min="0" value="{{this.quantity}}"></td>
-            <td class="num">{{#if (ne this.xpEach null)}}{{this.xpEach}}{{else}}—{{/if}}</td>
-            <td class="num">{{#if (ne this.subtotal null)}}{{this.subtotal}}{{else}}—{{/if}}</td>
-            <td class="actions">
-              <button type="button" data-action="lockCreature" title="{{localize "pf2e-encounter-builder.build.lock"}}"><i class="fa-solid {{#if this.locked}}fa-lock{{else}}fa-lock-open{{/if}}"></i></button>
-              <button type="button" data-action="inspectCreature" title="{{localize "pf2e-encounter-builder.build.inspect"}}"><i class="fa-solid fa-eye"></i></button>
-              <button type="button" data-action="ext" data-ext="generator" data-method="exclude" title="{{localize "pf2e-encounter-builder.generator.exclude"}}"><i class="fa-solid fa-ban"></i></button>
-              <button type="button" data-action="replaceEntry" title="{{localize "pf2e-encounter-builder.generator.replace"}}" {{#if this.locked}}disabled{{/if}}><i class="fa-solid fa-shuffle"></i></button>
-              <button type="button" data-action="removeCreature" title="{{localize "pf2e-encounter-builder.build.remove"}}"><i class="fa-solid fa-xmark"></i></button>
-            </td>
-          </tr>
-          {{else}}
-          <tr><td colspan="7">{{localize "pf2e-encounter-builder.build.emptyDraft"}}</td></tr>
-          {{/each}}
-          </tbody>
-        </table>
-      </div>
-      {{#if build.evaluation}}
-      <div class="peb-evaluation">
-        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.selected"}}</label>{{build.evaluation.selectedLabel}}</div>
-        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.target"}}</label>{{#if (ne build.evaluation.target null)}}{{build.evaluation.target}} XP{{else}}—{{/if}}</div>
-        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.supported"}}</label>{{build.evaluation.supportedXP}} XP</div>
-        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.difference"}}</label>{{build.evaluation.differenceLabel}}</div>
-        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.completeness"}}</label>{{build.evaluation.completeLabel}}</div>
-        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.inferred"}}</label>{{build.evaluation.inferredLabel}}</div>
-      </div>
-      <div class="peb-messages">
-        {{#if build.evaluation.systemCalculation}}<div class="peb-msg">{{localize "pf2e-encounter-builder.evaluation.pwolSystem"}}</div>{{/if}}
-        {{#if build.evaluation.variantUnsupported}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.evaluation.pwolUnsupported"}}</div>{{/if}}
-        {{#each build.evaluation.warnings}}<div class="peb-msg {{this.level}}">{{this.text}}</div>{{/each}}
-      </div>
-      {{else}}
-      <div class="peb-msg warn">{{localize "pf2e-encounter-builder.evaluation.blocked"}}</div>
+
+      {{#if build.isGenerate}}
+        {{> "modules/sargas-encounter-builder/templates/builder/generator.hbs"}}
       {{/if}}
-      <div class="peb-toolbar">
-        <button type="button" data-action="clearDraft"><i class="fa-solid fa-eraser"></i> {{localize "pf2e-encounter-builder.build.clear"}}</button>
-        {{> "modules/pf2e-encounter-builder/templates/builder/build-actions.hbs"}}
+
+      <div class="seb-filters{{#if build.isGenerate}} is-compact{{/if}}">
+        {{#if build.isBrowse}}
+        <div class="seb-field seb-field-wide">
+          <label>{{localize "sargas-encounter-builder.build.search"}}</label>
+          <div class="seb-search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="filter.search" value="{{build.filter.search}}" placeholder="{{localize 'sargas-encounter-builder.build.searchPlaceholder'}}" autocomplete="off"></div>
+        </div>
+        <div class="seb-field seb-field-short"><label>{{localize "sargas-encounter-builder.build.relativeMin"}}</label><input type="number" name="filter.relativeMin" value="{{build.filter.relativeMin}}"></div>
+        <div class="seb-field seb-field-short"><label>{{localize "sargas-encounter-builder.build.relativeMax"}}</label><input type="number" name="filter.relativeMax" value="{{build.filter.relativeMax}}"></div>
+        {{/if}}
+        <div class="seb-field"><label>{{localize "sargas-encounter-builder.build.traits"}}</label><input type="text" name="filter.traits" value="{{build.traits}}" placeholder="undead, fire"></div>
+        <div class="seb-field"><label>{{localize "sargas-encounter-builder.build.tags"}}</label><input type="text" name="filter.tags" value="{{build.tags}}" list="seb-tag-list" placeholder="environment:forest"><datalist id="seb-tag-list">{{#each build.allTags}}<option value="{{this}}"></option>{{/each}}</datalist></div>
+        <div class="seb-field seb-field-wide">
+          <label>{{localize "sargas-encounter-builder.build.rarity"}}</label>
+          <div class="seb-chips" role="group">{{#each build.rarities}}<button type="button" class="seb-chip{{#if this.active}} is-active{{/if}}" data-action="setRarity" data-value="{{this.value}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}">{{this.label}}</button>{{/each}}</div>
+        </div>
       </div>
-      {{> "modules/pf2e-encounter-builder/templates/builder/generator.hbs"}}
+
+      {{#if build.isBrowse}}
+      <div class="seb-group-header seb-sticky"><span>{{localize "sargas-encounter-builder.build.catalog"}}</span><span class="seb-text-dim">{{build.resultCount}}</span></div>
+      <div class="seb-scroll seb-list">
+        {{#if busy}}<div class="seb-note"><i class="fa-solid fa-spinner fa-spin"></i> {{localize "sargas-encounter-builder.build.loading"}}</div>{{/if}}
+        {{#if build.noPacks}}<div class="seb-empty"><i class="fa-solid fa-book"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.build.noPacksTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.build.noPacks"}}</p></div>
+        {{else}}
+          {{#each build.results}}{{> "modules/sargas-encounter-builder/templates/builder/creature-row.hbs" this}}{{else}}
+          {{#unless ../busy}}<div class="seb-empty"><i class="fa-solid fa-ghost"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.build.noResultsTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.build.noResults"}}</p></div>{{/unless}}
+          {{/each}}
+        {{/if}}
+      </div>
+      {{/if}}
+    </div>
+
+    <div class="seb-panel seb-panel-raised">
+      <div class="seb-panel-head">
+        <span class="seb-eyebrow">{{localize "sargas-encounter-builder.build.encounter"}} <span class="seb-text-dim">· {{build.draftCount}}</span></span>
+        <span class="seb-panel-actions">
+          <button type="button" class="seb-icon-button seb-icon-danger" data-action="clearDraft" data-tooltip="{{localize 'sargas-encounter-builder.build.clear'}}" aria-label="{{localize 'sargas-encounter-builder.build.clear'}}" {{#unless build.hasDraft}}disabled{{/unless}}><i class="fa-solid fa-eraser"></i></button>
+        </span>
+      </div>
+      {{#if build.meter}}{{> "modules/sargas-encounter-builder/templates/builder/meter.hbs" meter=build.meter}}{{/if}}
+      <div class="seb-scroll seb-list">
+        {{#each build.draft}}
+        <div class="seb-row seb-creature{{#if this.locked}} is-locked{{/if}}" data-uuid="{{this.uuid}}">
+          <img class="seb-portrait" src="{{#if this.img}}{{this.img}}{{else}}icons/svg/mystery-man.svg{{/if}}" alt="">
+          <div class="seb-row-main">
+            <span class="seb-row-name">{{this.name}}{{#if this.statusLabel}} <span class="seb-pill is-warn">{{this.statusLabel}}</span>{{/if}}</span>
+            <span class="seb-row-meta">{{localize "sargas-encounter-builder.build.levelShort" level=this.level}} <span class="seb-text-dim">({{this.relative}})</span>{{#if (ne this.xpEach null)}} · {{this.xpEach}} XP{{/if}}{{#if (ne this.subtotal null)}} · <strong>{{this.subtotal}} XP</strong>{{/if}}</span>
+          </div>
+          <div class="seb-row-controls">
+            <input class="seb-qty" type="number" name="quantity" min="0" value="{{this.quantity}}" aria-label="{{localize 'sargas-encounter-builder.build.qty'}}">
+            <button type="button" class="seb-icon-button{{#if this.locked}} is-active{{/if}}" data-action="lockCreature" data-tooltip="{{localize 'sargas-encounter-builder.build.lock'}}" aria-label="{{localize 'sargas-encounter-builder.build.lock'}}" aria-pressed="{{#if this.locked}}true{{else}}false{{/if}}"><i class="fa-solid {{#if this.locked}}fa-lock{{else}}fa-lock-open{{/if}}"></i></button>
+            <button type="button" class="seb-icon-button" data-action="replaceEntry" data-tooltip="{{localize 'sargas-encounter-builder.generator.replace'}}" aria-label="{{localize 'sargas-encounter-builder.generator.replace'}}" {{#if this.locked}}disabled{{/if}}><i class="fa-solid fa-shuffle"></i></button>
+            <button type="button" class="seb-icon-button" data-action="inspectCreature" data-tooltip="{{localize 'sargas-encounter-builder.build.inspect'}}" aria-label="{{localize 'sargas-encounter-builder.build.inspect'}}"><i class="fa-solid fa-eye"></i></button>
+            <button type="button" class="seb-icon-button seb-icon-danger" data-action="removeCreature" data-tooltip="{{localize 'sargas-encounter-builder.build.remove'}}" aria-label="{{localize 'sargas-encounter-builder.build.remove'}}"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        {{else}}
+        <div class="seb-dropzone seb-dropzone-tall" data-purpose="draft"><i class="fa-solid fa-skull"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.build.emptyDraftTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.build.emptyDraft"}}</p></div>
+        {{/each}}
+        {{#if build.hasDraft}}<div class="seb-dropzone" data-purpose="draft"><i class="fa-solid fa-hand-pointer"></i> {{localize "sargas-encounter-builder.build.dropHint"}}</div>{{/if}}
+      </div>
+      <div class="seb-toolbar seb-toolbar-end">
+        <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="saved" data-method="saveCurrent" {{#unless build.hasDraft}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk"></i> {{localize "sargas-encounter-builder.saved.saveCurrent"}}</button>
+        <button type="button" class="seb-button seb-button-primary seb-button-small" data-action="selectTab" data-tab="deploy" {{#unless build.hasDraft}}disabled{{/unless}}><i class="fa-solid fa-chess-knight"></i> {{localize "sargas-encounter-builder.build.toDeploy"}}</button>
+      </div>
     </div>
   </div>
+  {{/unless}}
 </section>

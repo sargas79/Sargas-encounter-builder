@@ -1,66 +1,60 @@
-<section class="tab {{#if (eq activeTab "saved")}}active{{/if}}" data-tab="saved" data-group="primary">
-  <div class="peb-columns">
-    <div class="peb-panel">
-      <h3>{{localize "pf2e-encounter-builder.saved.title"}}</h3>
-      <div class="peb-toolbar">
-        <button type="button" data-action="ext" data-ext="saved" data-method="saveCurrent" {{#unless saved.canSave}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk"></i> {{localize "pf2e-encounter-builder.saved.saveCurrent"}}</button>
+<section class="seb-tab" data-tab="saved">
+  <div class="seb-columns seb-columns-narrow-left">
+    <aside class="seb-panel">
+      <div class="seb-panel-head">
+        <span class="seb-eyebrow">{{localize "sargas-encounter-builder.saved.title"}} <span class="seb-text-dim">· {{saved.records.length}}</span></span>
+        <span class="seb-panel-actions"><button type="button" class="seb-button seb-button-primary seb-button-small" data-action="ext" data-ext="saved" data-method="saveCurrent" {{#unless saved.canSave}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk"></i> {{localize "sargas-encounter-builder.saved.saveCurrent"}}</button></span>
       </div>
-      <div class="peb-scroll">
-        <table class="peb-table">
-          <thead><tr><th>{{localize "pf2e-encounter-builder.saved.name"}}</th><th>{{localize "pf2e-encounter-builder.saved.originHeader"}}</th><th class="num">#</th><th>{{localize "pf2e-encounter-builder.saved.updated"}}</th><th></th></tr></thead>
-          <tbody>
-          {{#each saved.records}}
-          <tr class="{{#if this.selected}}locked{{/if}}">
-            <td><label><input type="radio" name="saved.selected" value="{{this.id}}" {{#if this.selected}}checked{{/if}}> {{this.name}}</label></td>
-            <td>{{this.origin}}</td><td class="num">{{this.count}}</td><td class="peb-tags">{{this.updated}}</td>
-            <td class="actions"><button type="button" data-action="ext" data-ext="saved" data-method="open" data-uuid="{{this.id}}" title="{{localize "pf2e-encounter-builder.saved.open"}}"><i class="fa-solid fa-folder-open"></i></button></td>
-          </tr>
-          {{else}}
-          <tr><td colspan="5">{{localize "pf2e-encounter-builder.saved.empty"}}</td></tr>
-          {{/each}}
-          </tbody>
-        </table>
+      <div class="seb-scroll">
+        {{#each saved.records}}
+        <div class="seb-row seb-row-click{{#if this.selected}} is-selected{{/if}}" data-action="ext" data-ext="saved" data-method="select" data-uuid="{{this.id}}">
+          <i class="fa-solid fa-scroll seb-row-icon"></i>
+          <div class="seb-row-main"><span class="seb-row-name">{{this.name}}</span><span class="seb-row-meta">{{this.origin}} · {{localize "sargas-encounter-builder.saved.creatureCount" count=this.count}} · {{this.updated}}</span></div>
+          <div class="seb-row-controls"><button type="button" class="seb-icon-button" data-action="ext" data-ext="saved" data-method="open" data-uuid="{{this.id}}" data-tooltip="{{localize 'sargas-encounter-builder.saved.open'}}" aria-label="{{localize 'sargas-encounter-builder.saved.open'}}"><i class="fa-solid fa-folder-open"></i></button></div>
+        </div>
+        {{else}}
+        <div class="seb-empty"><i class="fa-solid fa-box-open"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.saved.emptyTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.saved.empty"}}</p></div>
+        {{/each}}
       </div>
-    </div>
-    <div class="peb-panel">
+    </aside>
+    <div class="seb-panel seb-panel-raised">
       {{#if saved.selected}}
-      <h3>{{saved.selected.name}} <span class="peb-tags">{{saved.selected.origin}}{{#if saved.selected.policy}} · {{saved.selected.policy}}{{/if}}</span></h3>
-      <div class="peb-toolbar">
-        <button type="button" data-action="ext" data-ext="saved" data-method="open"><i class="fa-solid fa-folder-open"></i> {{localize "pf2e-encounter-builder.saved.open"}}</button>
-        <button type="button" data-action="ext" data-ext="saved" data-method="updateFromDraft" {{#unless saved.canSave}}disabled{{/unless}} title="{{localize "pf2e-encounter-builder.saved.updateHint"}}"><i class="fa-solid fa-pen-to-square"></i> {{localize "pf2e-encounter-builder.saved.update"}}</button>
-        <button type="button" data-action="ext" data-ext="saved" data-method="editNotes"><i class="fa-solid fa-note-sticky"></i></button>
-        <button type="button" data-action="ext" data-ext="saved" data-method="rename"><i class="fa-solid fa-pen"></i></button>
-        <button type="button" data-action="ext" data-ext="saved" data-method="duplicate"><i class="fa-solid fa-copy"></i></button>
-        <button type="button" data-action="ext" data-ext="saved" data-method="delete"><i class="fa-solid fa-trash"></i></button>
+      <div class="seb-panel-head">
+        <span class="seb-eyebrow">{{saved.selected.name}} <span class="seb-text-dim">· {{saved.selected.origin}}{{#if saved.selected.policy}} · {{saved.selected.policy}}{{/if}}</span></span>
+        <span class="seb-panel-actions">
+          <button type="button" class="seb-icon-button" data-action="ext" data-ext="saved" data-method="editNotes" data-tooltip="{{localize 'sargas-encounter-builder.saved.notesTitle'}}" aria-label="{{localize 'sargas-encounter-builder.saved.notesTitle'}}"><i class="fa-solid fa-note-sticky"></i></button>
+          <button type="button" class="seb-icon-button" data-action="ext" data-ext="saved" data-method="rename" data-tooltip="{{localize 'sargas-encounter-builder.saved.renameTitle'}}" aria-label="{{localize 'sargas-encounter-builder.saved.renameTitle'}}"><i class="fa-solid fa-pen"></i></button>
+          <button type="button" class="seb-icon-button" data-action="ext" data-ext="saved" data-method="duplicate" data-tooltip="{{localize 'sargas-encounter-builder.saved.duplicate'}}" aria-label="{{localize 'sargas-encounter-builder.saved.duplicate'}}"><i class="fa-solid fa-copy"></i></button>
+          <button type="button" class="seb-icon-button seb-icon-danger" data-action="ext" data-ext="saved" data-method="delete" data-tooltip="{{localize 'sargas-encounter-builder.saved.deleteTitle'}}" aria-label="{{localize 'sargas-encounter-builder.saved.deleteTitle'}}"><i class="fa-solid fa-trash"></i></button>
+        </span>
       </div>
-      {{#if saved.selected.notes}}<div class="peb-msg">{{saved.selected.notes}}</div>{{/if}}
-      {{#each saved.missing}}<div class="peb-msg error">{{localize "pf2e-encounter-builder.saved.missingEntry" name=this.name uuid=this.uuid}}</div>{{/each}}
-      <div class="peb-scroll">
-        <table class="peb-table">
-          <thead><tr><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.level"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.qty"}}</th></tr></thead>
-          <tbody>{{#each saved.selected.entries}}<tr><td>{{this.name}}{{#if this.locked}} <i class="fa-solid fa-lock"></i>{{/if}}</td><td class="num">{{this.level}}</td><td class="num">{{this.quantity}}</td></tr>{{/each}}</tbody>
-        </table>
+      {{#if saved.selected.notes}}<div class="seb-note"><i class="fa-solid fa-note-sticky"></i> {{saved.selected.notes}}</div>{{/if}}
+      {{#each saved.missing}}<div class="seb-note is-error">{{localize "sargas-encounter-builder.saved.missingEntry" name=this.name uuid=this.uuid}}</div>{{/each}}
+      <div class="seb-scroll seb-list">
+        {{#each saved.selected.entries}}
+        <div class="seb-row"><i class="fa-solid {{#if this.locked}}fa-lock{{else}}fa-skull{{/if}} seb-row-icon"></i><div class="seb-row-main"><span class="seb-row-name">{{this.name}}</span><span class="seb-row-meta">{{localize "sargas-encounter-builder.build.levelShort" level=this.level}}</span></div><div class="seb-row-controls"><span class="seb-pill is-level">× {{this.quantity}}</span></div></div>
+        {{/each}}
         {{#if saved.selected.variant}}
-        <h4>{{localize "pf2e-encounter-builder.saved.variantOf"}}</h4>
-        <div class="peb-tags">{{#each saved.selected.variant.original}}{{this.name}} × {{this.quantity}}{{#unless @last}}, {{/unless}}{{/each}}</div>
-        <div class="peb-tags">{{#each saved.selected.variant.diff}}<div>{{this.changeLabel}}: {{this.name}} {{this.from}} → {{this.to}}</div>{{/each}}</div>
+        <div class="seb-group-header"><span>{{localize "sargas-encounter-builder.saved.variantOf"}}</span></div>
+        <p class="seb-hint">{{#each saved.selected.variant.original}}{{this.name}} × {{this.quantity}}{{#unless @last}}, {{/unless}}{{/each}}</p>
+        {{#each saved.selected.variant.diff}}<div class="seb-note is-inline">{{this.changeLabel}}: {{this.name}} {{this.from}} → {{this.to}}</div>{{/each}}
         {{/if}}
       </div>
-      <h4>{{localize "pf2e-encounter-builder.saved.savedEvaluation"}}</h4>
-      {{#if saved.selected.evaluation}}
-        {{> "modules/pf2e-encounter-builder/templates/builder/snapshot.hbs" snap=saved.selected.evaluation}}
-      {{else}}<div class="peb-tags">{{localize "pf2e-encounter-builder.saved.noEvaluation"}}</div>{{/if}}
-      <div class="peb-toolbar">
-        <button type="button" data-action="ext" data-ext="saved" data-method="recalculate" {{#unless saved.canRecalc}}disabled{{/unless}}><i class="fa-solid fa-calculator"></i> {{localize "pf2e-encounter-builder.saved.recalculate"}}</button>
-        {{#if saved.recalculated}}<button type="button" data-action="ext" data-ext="saved" data-method="updateEvaluation"><i class="fa-solid fa-arrow-right-to-bracket"></i> {{localize "pf2e-encounter-builder.saved.updateEvaluation"}}</button>{{/if}}
+      <div class="seb-group-header"><span>{{localize "sargas-encounter-builder.saved.savedEvaluation"}}</span></div>
+      {{#if saved.selected.evaluation}}{{> "modules/sargas-encounter-builder/templates/builder/snapshot.hbs" snap=saved.selected.evaluation}}{{else}}<p class="seb-hint">{{localize "sargas-encounter-builder.saved.noEvaluation"}}</p>{{/if}}
+      <div class="seb-toolbar seb-toolbar-wrap">
+        <button type="button" class="seb-button seb-button-primary seb-button-small" data-action="ext" data-ext="saved" data-method="open"><i class="fa-solid fa-folder-open"></i> {{localize "sargas-encounter-builder.saved.open"}}</button>
+        <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="saved" data-method="updateFromDraft" {{#unless saved.canSave}}disabled{{/unless}} data-tooltip="{{localize 'sargas-encounter-builder.saved.updateHint'}}"><i class="fa-solid fa-pen-to-square"></i> {{localize "sargas-encounter-builder.saved.update"}}</button>
+        <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="saved" data-method="recalculate" {{#unless saved.canRecalc}}disabled{{/unless}}><i class="fa-solid fa-calculator"></i> {{localize "sargas-encounter-builder.saved.recalculate"}}</button>
+        {{#if saved.recalculated}}<button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="saved" data-method="updateEvaluation"><i class="fa-solid fa-arrow-right-to-bracket"></i> {{localize "sargas-encounter-builder.saved.updateEvaluation"}}</button>{{/if}}
       </div>
       {{#if saved.recalculated}}
-      <h4>{{localize "pf2e-encounter-builder.saved.recalculated"}}</h4>
-      {{> "modules/pf2e-encounter-builder/templates/builder/snapshot.hbs" snap=saved.recalculated}}
+      <div class="seb-group-header"><span>{{localize "sargas-encounter-builder.saved.recalculated"}}</span></div>
+      {{> "modules/sargas-encounter-builder/templates/builder/snapshot.hbs" snap=saved.recalculated}}
       {{/if}}
-      <div class="peb-tags">{{localize "pf2e-encounter-builder.saved.created"}}: {{saved.selected.created}} · {{localize "pf2e-encounter-builder.saved.updated"}}: {{saved.selected.updated}}{{#if saved.selected.seed}} · {{localize "pf2e-encounter-builder.generator.lastSeed"}}: {{saved.selected.seed}}{{/if}}</div>
+      <p class="seb-hint">{{localize "sargas-encounter-builder.saved.created"}}: {{saved.selected.created}} · {{localize "sargas-encounter-builder.saved.updated"}}: {{saved.selected.updated}}{{#if saved.selected.seed}} · {{localize "sargas-encounter-builder.generator.lastSeed"}} {{saved.selected.seed}}{{/if}}</p>
       {{else}}
-      <div class="peb-msg">{{localize "pf2e-encounter-builder.saved.select"}}</div>
+      <div class="seb-empty"><i class="fa-solid fa-hand-pointer"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.saved.selectTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.saved.select"}}</p></div>
       {{/if}}
     </div>
   </div>

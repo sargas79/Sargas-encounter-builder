@@ -88,8 +88,8 @@ These are isolated behind `src/foundry/*` adapters and are exercised by the Quen
 ## 5. Runtime verification steps
 
 1. Install Foundry VTT 13 (latest stable) and PF2e 7.x. Note both versions.
-2. Install this module from the repository (`npm ci && npm run build`, then copy `module.json`, `dist/`, `lang/`, `styles/`, `templates/` into `Data/modules/pf2e-encounter-builder/`).
-3. Install and enable the **Quench** module. Open the Quench panel and run the `pf2e-encounter-builder` suites.
+2. Install this module from the repository (`npm ci && npm run build`, then copy `module.json`, `dist/`, `lang/`, `styles/`, `templates/` into `Data/modules/sargas-encounter-builder/`).
+3. Install and enable the **Quench** module. Open the Quench panel and run the `sargas-encounter-builder` suites.
 4. Follow `docs/MANUAL-TESTS.md` for the remaining manual cases and record the Foundry build and PF2e version in the results table.
 5. Only after all suites pass may `module.json`'s `compatibility.verified` be set, to the exact Foundry build used.
 
@@ -102,11 +102,21 @@ Recorded on 2026-10-01 in the build container (Node 22.22.0, no Foundry):
 | `npm test` (Vitest 4)                         | 130 tests, 8 files, all passing                                                        |
 | `npm run lint` (ESLint 9 + typescript-eslint) | clean                                                                                  |
 | `npm run typecheck` (TypeScript 5.9, strict)  | clean                                                                                  |
-| `npm run build` (Vite 7, ES module)           | `dist/pf2e-encounter-builder.js` + lazy chunks                                         |
+| `npm run build` (Vite 7, ES module)           | `dist/sargas-encounter-builder.js` + lazy chunks                                       |
 | Quench suites                                 | **not executed** (no Foundry available); 4 batches registered in `src/quench/tests.ts` |
 | Manual matrix (`docs/MANUAL-TESTS.md`)        | **not executed**                                                                       |
 
 `module.json` therefore declares `compatibility.minimum: "13"`, `maximum: "14"`, and no `verified`.
+
+## 6b. 0.2.0 update
+
+- The maintainer's other modules (`wondrous-spellbook`, `sargas-investigation-board`, `victory-counter-v13`)
+  are verified on Foundry 14.366–14.368 with PF2e 8.5.1, so `module.json` now declares Foundry 14 and PF2e
+  8.0.0 minimums. The PF2e data paths in §2 were verified against 7.9.1 source; PF2e 8 keeps the item paths
+  those modules use (`system.level.value`, `system.traits.value`, `system.traits.rarity`), and the NPC paths
+  are checked at runtime by the Quench "system integration" batch.
+- Build-environment results for 0.2.0: 148 Vitest tests passing; lint, typecheck and build clean. Quench and
+  the manual matrix (including M29–M39) remain to be run.
 
 ## 7. Foundry v14-specific risks to verify first
 

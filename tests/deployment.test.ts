@@ -276,7 +276,7 @@ describe("deployment semantics", () => {
       expect(tk.actorLink).toBe(false);
       expect(tk.hidden).toBe(true);
       expect(
-        (tk.flags as Record<string, Record<string, string>>)["pf2e-encounter-builder"]?.deployment,
+        (tk.flags as Record<string, Record<string, string>>)["sargas-encounter-builder"]?.deployment,
       ).toBeTruthy();
     }
     expect(gateway.tokens.map((t) => t.name)).toEqual([

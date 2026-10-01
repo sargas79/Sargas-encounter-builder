@@ -1,5 +1,5 @@
 /** Module identifier. Also the namespace for flags, settings, hooks and CSS classes. */
-export const MODULE_ID = "pf2e-encounter-builder" as const;
+export const MODULE_ID = "sargas-encounter-builder" as const;
 
 /** Flag keys used under `flags[MODULE_ID]`. */
 export const FLAGS = {
@@ -11,6 +11,8 @@ export const FLAGS = {
   result: "result",
   /** Custom creature tag map on the module data JournalEntry. */
   tags: "tags",
+  /** GM-authored themes on the module data JournalEntry. */
+  themes: "themes",
   /** Marker that a JournalEntry is the module data journal. */
   dataJournal: "dataJournal",
   /** Provenance marker on imported world Actors. */
@@ -24,12 +26,15 @@ export const SETTINGS = {
   partyProfiles: "partyProfiles",
   activeParty: "activeParty",
   selectedPacks: "selectedPacks",
+  packsInitialized: "packsInitialized",
   tableMaxDepth: "tableMaxDepth",
   tableMaxQuantityPerEntry: "tableMaxQuantityPerEntry",
   tableMaxTotalCreatures: "tableMaxTotalCreatures",
   numberDuplicateTokens: "numberDuplicateTokens",
   debugMode: "debugMode",
   dataSchemaVersion: "dataSchemaVersion",
+  /** Per-user UI memory: last party, mode and threat. */
+  uiState: "uiState",
 } as const;
 
 /** Names of module-owned documents. */

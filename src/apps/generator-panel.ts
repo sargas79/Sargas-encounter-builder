@@ -1,109 +1,201 @@
 /**
- * Balanced random generation panel: an extension of EncounterBuilderApp.
- * Reads the active party, the catalog filters from the Build tab, and the locked draft entries.
+ * Themed random generation panel: theme, archetype, advanced constraints, custom themes.
  */
-import type { CompositionPreference } from "../core/schemas.js";
-import { generateEncounter, type GeneratorInput, type GeneratorResult } from "../core/generator.js";
-import { rngFromSeed } from "../core/rng.js";
+import type { CustomThemeRecord } from "../core/schemas.js";
 import { removeEntry, type Draft, type DraftEntry } from "../core/draft.js";
+import { hashSeed, rngFromSeed } from "../core/rng.js";
+import {
+  ARCHETYPES,
+  availableThemes,
+  generateThemedEncounter,
+  type Archetype,
+  type ThemedCandidate,
+  type ThemedInput,
+  type ThemedResult,
+} from "../core/themed-generator.js";
+import { themePool, type Theme } from "../core/themes.js";
+import { escapeHtml, randomHexSeed, splitList } from "../core/util.js";
+import { DialogV2, isGM } from "../foundry/compat.js";
 import { t } from "../foundry/i18n.js";
 import { services } from "../foundry/services.js";
-import { isGM } from "../foundry/compat.js";
-import type { EncounterBuilderApp } from "./encounter-builder-app.js";
-import { randomHexSeed } from "../core/util.js";
+import { confirm, type EncounterBuilderApp } from "./encounter-builder-app.js";
 
 export interface GeneratorOptions {
+  /** "auto" or a theme id. */
+  themeId: string;
+  archetype: Archetype;
+  outsiderBoss: boolean;
   relativeMin: number;
   relativeMax: number;
   minCount: number;
   maxCount: number;
-  composition: CompositionPreference;
   duplicateCap: number;
   seed: string;
   excludeUuids: string[];
+  showAdvanced: boolean;
 }
-
-const COMPOSITIONS: CompositionPreference[] = ["unrestricted", "solo", "pair", "group", "bossWithSupport"];
 
 export class GeneratorPanel {
   options: GeneratorOptions = {
+    themeId: "auto",
+    archetype: "any",
+    outsiderBoss: true,
     relativeMin: -4,
     relativeMax: 4,
     minCount: 1,
     maxCount: 6,
-    composition: "unrestricted",
     duplicateCap: 4,
     seed: "",
     excludeUuids: [],
+    showAdvanced: false,
   };
-  lastResult: GeneratorResult | null = null;
+  lastResult: ThemedResult | null = null;
   lastSeed: string | null = null;
   busy = false;
+  #themeCache: { key: string; themes: Theme[]; sizes: Map<string, number> } | null = null;
 
   constructor(private readonly app: EncounterBuilderApp) {}
+
+  /* ---------------------------- data -------------------------------- */
+
+  async #candidates(): Promise<ThemedCandidate[]> {
+    const { catalog } = services();
+    const ref = this.app.state.resolved?.roster.reference.level ?? null;
+    const filter = {
+      ...this.app.state.filter,
+      referenceLevel: ref,
+      relativeMin: null,
+      relativeMax: null,
+      levelMin: null,
+      levelMax: null,
+      search: "",
+    };
+    const entries = await catalog.search(filter);
+    return entries.map((c) => ({
+      uuid: c.uuid,
+      name: c.name,
+      level: c.level,
+      traits: c.traits,
+      tags: c.tags,
+      img: c.img,
+      packLabel: c.packLabel,
+    }));
+  }
+
+  async themes(): Promise<{ themes: Theme[]; candidates: ThemedCandidate[]; sizes: Map<string, number> }> {
+    const candidates = await this.#candidates();
+    const customs = services().themes.list();
+    const key = `${hashSeed(candidates.map((c) => c.uuid).join("|"))}:${hashSeed(JSON.stringify(customs))}`;
+    if (this.#themeCache?.key === key) {
+      return { themes: this.#themeCache.themes, candidates, sizes: this.#themeCache.sizes };
+    }
+    const themes = availableThemes(candidates, customs);
+    const customMap = new Map(customs.map((c) => [c.id, c]));
+    const sizes = new Map(themes.map((th) => [th.id, themePool(th, candidates, customMap).length]));
+    this.#themeCache = { key, themes, sizes };
+    return { themes, candidates, sizes };
+  }
 
   /* ---------------------------- context ----------------------------- */
 
   async prepareContext(): Promise<Record<string, unknown>> {
+    const ready = this.app.ready;
+    let themeOptions: { value: string; label: string; selected: boolean; group: string; size: number }[] = [];
+    if (ready) {
+      try {
+        const { themes, sizes } = await this.themes();
+        themeOptions = themes.map((theme) => ({
+          value: theme.id,
+          label: theme.name,
+          selected: theme.id === this.options.themeId,
+          group: theme.kind === "custom" ? "custom" : theme.kind === "environment" ? "environment" : "auto",
+          size: sizes.get(theme.id) ?? 0,
+        }));
+      } catch (error) {
+        console.error("sargas-encounter-builder | theme derivation failed", error);
+      }
+    }
     const result = this.lastResult;
-    const last = result
-      ? result.ok
-        ? {
-            ok: true,
-            fitLabel: t(`generator.fit.${result.fit}`),
-            totalXP: result.totalXP,
-            target: result.target,
-            difference: result.difference,
-            feasible: result.feasibleMultisets,
-            capped: result.capped,
-            explanation: result.explanation.join(" · "),
-          }
-        : {
-            ok: false,
-            reason: t(`generator.failure.${result.reason}`, result.detail),
-            detail: JSON.stringify(result.detail),
-            capped: result.capped,
-          }
-      : null;
     return {
       options: this.options,
-      compositions: COMPOSITIONS.map((value) => ({
+      themeOptions,
+      autoSelected: this.options.themeId === "auto",
+      customThemes: services()
+        .themes.list()
+        .map((c) => ({ ...c, summary: describeCustom(c) })),
+      archetypes: ARCHETYPES.map((value) => ({
         value,
-        label: t(`generator.composition.${value}`),
-        selected: value === this.options.composition,
+        label: t(`generator.archetype.${value}`),
+        hint: t(`generator.archetypeHint.${value}`),
+        active: value === this.options.archetype,
       })),
+      isBossMinions: this.options.archetype === "bossMinions",
       excluded: this.options.excludeUuids.map((uuid) => ({
         uuid,
         name: services().catalog.get(uuid)?.name ?? uuid,
       })),
-      last,
+      last: result
+        ? result.ok
+          ? {
+              ok: true,
+              themeName: result.theme.name,
+              archetypeLabel: t(`generator.archetype.${result.archetype}`),
+              fitLabel: t(`generator.fit.${result.fit}`),
+              totalXP: result.totalXP,
+              target: result.target,
+              difference: result.difference,
+              outsider: result.outsider?.name ?? null,
+              poolSize: result.themePoolSize,
+              capped: result.capped,
+            }
+          : {
+              ok: false,
+              reason: t(`generator.failure.${result.reason}`, result.detail),
+              themeName: result.theme?.name ?? null,
+              tried: result.themesTried.length,
+            }
+        : null,
       lastSeed: this.lastSeed,
       busy: this.busy,
-      canGenerate: !!this.app.state.evaluation && !this.busy,
+      canGenerate: ready && !this.busy,
+      hasResult: !!(result && result.ok),
       lockedCount: this.app.state.draft.entries.filter((e) => e.locked).length,
     };
   }
 
   /* ---------------------------- inputs ------------------------------ */
 
-  async onChange(name: string, value: string): Promise<boolean> {
+  async onChange(name: string, value: string, target: HTMLElement): Promise<boolean> {
     if (!name.startsWith("gen.")) return false;
     const key = name.slice(4) as keyof GeneratorOptions;
     switch (key) {
-      case "composition":
-        if (COMPOSITIONS.includes(value as CompositionPreference))
-          this.options.composition = value as CompositionPreference;
+      case "themeId":
+        this.options.themeId = value || "auto";
         break;
       case "seed":
         this.options.seed = value.trim();
         break;
+      case "outsiderBoss":
+        this.options.outsiderBoss = (target as HTMLInputElement).checked;
+        break;
       case "relativeMin":
-      case "relativeMax":
+      case "relativeMax": {
+        const n = Number.parseInt(value, 10);
+        this.options[key] = Number.isInteger(n)
+          ? Math.max(-4, Math.min(4, n))
+          : key === "relativeMin"
+            ? -4
+            : 4;
+        break;
+      }
       case "minCount":
       case "maxCount":
-      case "duplicateCap":
-        this.options[key] = Number.parseInt(value, 10) || 0;
+      case "duplicateCap": {
+        const n = Number.parseInt(value, 10);
+        this.options[key] =
+          Number.isInteger(n) && n >= 1 ? n : key === "minCount" ? 1 : key === "maxCount" ? 6 : 4;
         break;
+      }
       default:
         return false;
     }
@@ -111,6 +203,17 @@ export class GeneratorPanel {
   }
 
   /* ---------------------------- actions ----------------------------- */
+
+  async setArchetype(_uuid: string | undefined, target?: HTMLElement): Promise<void> {
+    const value = target?.dataset.value as Archetype | undefined;
+    if (value && ARCHETYPES.includes(value)) this.options.archetype = value;
+    await this.app.render({ parts: ["build"] });
+  }
+
+  async toggleAdvanced(): Promise<void> {
+    this.options.showAdvanced = !this.options.showAdvanced;
+    await this.app.render({ parts: ["build"] });
+  }
 
   async generate(): Promise<void> {
     await this.#run({});
@@ -120,18 +223,22 @@ export class GeneratorPanel {
     await this.#run({ freshSeed: true });
   }
 
-  /** Re-run with every entry except `uuid` locked, and `uuid` excluded for this run. */
+  /** Keep the archetype, pick a different theme. */
+  async retheme(): Promise<void> {
+    const current = this.lastResult?.ok ? this.lastResult.theme.id : null;
+    await this.#run({ freshSeed: true, excludeThemeIds: current ? [current] : [], forceAuto: true });
+  }
+
   async replaceEntry(uuid: string): Promise<void> {
     await this.#run({ replaceUuid: uuid });
   }
 
-  /** Exclude from future generation and drop it from the draft (locked or not) so it cannot survive as locked. */
   async exclude(uuid: string): Promise<void> {
     if (!this.options.excludeUuids.includes(uuid)) this.options.excludeUuids.push(uuid);
     if (this.app.state.draft.entries.some((e) => e.uuid === uuid)) {
       this.app.setDraft(removeEntry(this.app.state.draft, uuid));
     }
-    await this.app.render({ parts: ["header", "build", "deploy"] });
+    await this.app.render({ parts: ["build", "deploy", "footer"] });
   }
 
   async unexclude(uuid: string): Promise<void> {
@@ -139,36 +246,114 @@ export class GeneratorPanel {
     await this.app.render({ parts: ["build"] });
   }
 
+  /* ---------------------------- custom themes ----------------------- */
+
+  async newTheme(): Promise<void> {
+    await this.#editThemeDialog(null);
+  }
+
+  async editTheme(id?: string): Promise<void> {
+    const record = id ? services().themes.get(id) : null;
+    if (record) await this.#editThemeDialog(record);
+  }
+
+  async deleteTheme(id?: string): Promise<void> {
+    const record = id ? services().themes.get(id) : null;
+    if (!record || !isGM()) return;
+    const ok = await confirm(
+      t("generator.themes.deleteTitle"),
+      t("generator.themes.deleteConfirm", { name: escapeHtml(record.name) }),
+      "fa-solid fa-trash",
+    );
+    if (!ok) return;
+    await services().themes.delete(record.id);
+    if (this.options.themeId === `custom:${record.id}`) this.options.themeId = "auto";
+    this.#themeCache = null;
+    await this.app.render({ parts: ["build"] });
+  }
+
+  async #editThemeDialog(record: CustomThemeRecord | null): Promise<void> {
+    if (!isGM()) return;
+    const v = (s: string) => escapeHtml(s);
+    const field = (name: string, label: string, control: string) =>
+      `<div class="seb-field"><label for="seb-theme-${name}">${label}</label>${control}</div>`;
+    const content = `
+      <div class="seb-form">
+        ${field("name", t("generator.themes.name"), `<input id="seb-theme-name" type="text" name="name" value="${v(record?.name ?? "")}" autofocus>`)}
+        ${field("required", t("generator.themes.required"), `<input id="seb-theme-required" type="text" name="required" value="${v(record?.requiredTraits.join(", ") ?? "")}" placeholder="undead, ghoul">`)}
+        ${field("any", t("generator.themes.any"), `<input id="seb-theme-any" type="text" name="any" value="${v(record?.anyTraits.join(", ") ?? "")}" placeholder="goblin, hobgoblin">`)}
+        ${field("environment", t("generator.themes.environment"), `<input id="seb-theme-environment" type="text" name="environment" value="${v(record?.environment ?? "")}" placeholder="forest">`)}
+        ${field("uuids", t("generator.themes.uuids"), `<textarea id="seb-theme-uuids" name="uuids" rows="3" placeholder="Compendium.pf2e.pathfinder-bestiary.Actor.…">${v(record?.candidateUuids.join("\n") ?? "")}</textarea>`)}
+        ${field("notes", t("generator.themes.notes"), `<input id="seb-theme-notes" type="text" name="notes" value="${v(record?.notes ?? "")}">`)}
+        <p class="seb-hint">${t("generator.themes.hint")}</p>
+      </div>`;
+    const saved = (await DialogV2().wait({
+      window: {
+        title: record ? t("generator.themes.editTitle") : t("generator.themes.newTitle"),
+        icon: "fa-solid fa-palette",
+      },
+      classes: ["seb-dialog"],
+      position: { width: 480 },
+      content,
+      modal: true,
+      rejectClose: false,
+      buttons: [
+        {
+          action: "save",
+          label: t("generator.themes.save"),
+          icon: "fa-solid fa-floppy-disk",
+          default: true,
+          callback: (_e: Event, _b: HTMLButtonElement, dialog: { element: HTMLElement }) => {
+            const read = (name: string) =>
+              dialog.element.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name='${name}']`)
+                ?.value ?? "";
+            return {
+              id: record?.id,
+              name: read("name").trim() || t("generator.themes.untitled"),
+              requiredTraits: splitList(read("required")),
+              anyTraits: splitList(read("any")),
+              environment: read("environment").trim().toLowerCase() || null,
+              candidateUuids: splitList(read("uuids"), false),
+              notes: read("notes").trim(),
+            };
+          },
+        },
+        { action: "cancel", label: t("start.cancel"), callback: () => null },
+      ],
+    })) as (Omit<CustomThemeRecord, "id"> & { id?: string }) | null | string;
+    if (!saved || typeof saved !== "object") return;
+    const stored = await services().themes.save(saved);
+    this.options.themeId = `custom:${stored.id}`;
+    this.#themeCache = null;
+    await this.app.render({ parts: ["build"] });
+  }
+
+  /* ---------------------------- run --------------------------------- */
+
   async #run({
     freshSeed = false,
     replaceUuid,
+    excludeThemeIds = [],
+    forceAuto = false,
   }: {
     freshSeed?: boolean;
     replaceUuid?: string;
+    excludeThemeIds?: string[];
+    forceAuto?: boolean;
   }): Promise<void> {
     if (!isGM() || this.busy) return;
-    const { catalog } = services();
     const resolved = this.app.state.resolved;
     const roster = resolved?.roster;
-    if (!resolved || !roster || roster.blockers.length > 0 || roster.reference.level === null) {
-      this.app.pushMessage("warn", t("evaluation.blocked"));
-      await this.app.render({ parts: ["header", "build"] });
+    if (!resolved || !roster || !this.app.ready) {
+      this.app.pushMessage("warn", t("gate.tooltip"));
+      await this.app.render({ parts: ["header"] });
       return;
     }
     this.busy = true;
     await this.app.render({ parts: ["build"] });
     try {
-      const referenceLevel = roster.reference.level;
-      const filter = {
-        ...this.app.state.filter,
-        referenceLevel,
-        relativeMin: null,
-        relativeMax: null,
-        levelMin: null,
-        levelMax: null,
-        search: "",
-      };
-      const candidates = await catalog.search(filter);
+      const referenceLevel = roster.reference.level!;
+      const { candidates } = await this.themes();
       const draft = this.app.state.draft;
       const locked = draft.entries
         .filter((e) => (replaceUuid ? e.uuid !== replaceUuid : e.locked))
@@ -183,29 +368,26 @@ export class GeneratorPanel {
         }));
       const seed = this.options.seed || (freshSeed || !this.lastSeed ? randomHexSeed() : this.lastSeed);
       const excludeUuids = [...this.options.excludeUuids, ...(replaceUuid ? [replaceUuid] : [])];
-      const input: GeneratorInput = {
+      const input: ThemedInput = {
         threat: resolved.profile.selectedThreat,
         partySize: roster.partySize,
         referenceLevel,
-        candidates: candidates.map((c) => ({
-          uuid: c.uuid,
-          name: c.name,
-          level: c.level,
-          traits: c.traits,
-          img: c.img,
-          packLabel: c.packLabel,
-        })),
+        candidates,
+        theme: forceAuto ? "auto" : this.options.themeId,
+        archetype: this.options.archetype,
+        customThemes: services().themes.list(),
+        outsiderBoss: this.options.outsiderBoss,
         relativeMin: this.options.relativeMin,
         relativeMax: this.options.relativeMax,
         minCount: this.options.minCount,
         maxCount: this.options.maxCount,
-        composition: this.options.composition,
         duplicateCap: this.options.duplicateCap,
         excludeUuids,
+        excludeThemeIds,
         locked,
         rng: rngFromSeed(seed),
       };
-      const result = generateEncounter(input);
+      const result = generateThemedEncounter(input);
       this.lastResult = result;
       this.lastSeed = seed;
       if (result.ok) {
@@ -220,14 +402,17 @@ export class GeneratorPanel {
               threat: input.threat,
               partySize: input.partySize,
               referenceLevel,
+              theme: result.theme.id,
+              themeName: result.theme.name,
+              archetype: result.archetype,
+              outsiderBoss: result.outsider?.uuid ?? null,
               relativeMin: input.relativeMin,
               relativeMax: input.relativeMax,
               minCount: input.minCount,
               maxCount: input.maxCount,
-              composition: input.composition,
               duplicateCap: input.duplicateCap,
               excludeUuids,
-              packIds: catalog.selectedPackIds(),
+              packIds: services().catalog.selectedPackIds(),
               traits: this.app.state.filter.traits ?? [],
               tags: this.app.state.filter.tags ?? [],
               rarities: this.app.state.filter.rarities ?? [],
@@ -237,18 +422,19 @@ export class GeneratorPanel {
         };
         this.app.setDraft(newDraft);
         this.app.pushMessage(
-          result.fit === "exact" ? "ok" : "warn",
+          result.fit === "exact" ? "ok" : "info",
           t(`generator.resultMessage.${result.fit}`, {
+            theme: result.theme.name,
             total: result.totalXP,
             target: result.target,
             difference: result.difference,
           }),
         );
       } else {
-        this.app.pushMessage("error", t(`generator.failure.${result.reason}`, result.detail));
+        this.app.pushMessage("warn", t(`generator.failure.${result.reason}`, result.detail));
       }
     } catch (error) {
-      console.error("pf2e-encounter-builder | generation failed", error);
+      console.error("sargas-encounter-builder | generation failed", error);
       this.app.pushMessage(
         "error",
         t("errors.generic", { message: error instanceof Error ? error.message : String(error) }),
@@ -256,11 +442,10 @@ export class GeneratorPanel {
     } finally {
       this.busy = false;
     }
-    await this.app.render({ parts: ["header", "build", "deploy"] });
+    await this.app.render({ parts: ["header", "build", "deploy", "footer"] });
   }
 }
 
-/** Merge generated and locked rows of the same creature into one draft entry (locked wins). */
 function mergeEntries(
   entries: {
     uuid: string;
@@ -276,10 +461,8 @@ function mergeEntries(
   const map = new Map<string, DraftEntry>();
   for (const e of entries) {
     const existing = map.get(e.uuid);
-    if (existing) {
-      existing.quantity += e.quantity;
-      existing.locked = existing.locked || (previousLocks.get(e.uuid) ?? false);
-    } else {
+    if (existing) existing.quantity += e.quantity;
+    else
       map.set(e.uuid, {
         uuid: e.uuid,
         name: e.name,
@@ -290,7 +473,17 @@ function mergeEntries(
         packLabel: e.packLabel,
         traits: e.traits,
       });
-    }
   }
   return [...map.values()];
+}
+
+function describeCustom(c: CustomThemeRecord): string {
+  const parts: string[] = [];
+  if (c.requiredTraits.length)
+    parts.push(`${t("generator.themes.required")}: ${c.requiredTraits.join(", ")}`);
+  if (c.anyTraits.length) parts.push(`${t("generator.themes.any")}: ${c.anyTraits.join(", ")}`);
+  if (c.environment) parts.push(`${t("generator.themes.environment")}: ${c.environment}`);
+  if (c.candidateUuids.length)
+    parts.push(t("generator.themes.uuidCount", { count: c.candidateUuids.length }));
+  return parts.join(" · ");
 }

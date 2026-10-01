@@ -1,6 +1,6 @@
 import { MODULE_ID } from "../constants.js";
 
-/** Localize a module key (`pf2e-encounter-builder.<key>`). Falls back to the key when missing. */
+/** Localize a module key (`sargas-encounter-builder.<key>`). Falls back to the key when missing. */
 export function t(key: string, data?: Record<string, unknown>): string {
   const full = key.startsWith(`${MODULE_ID}.`) ? key : `${MODULE_ID}.${key}`;
   if (typeof game === "undefined" || !game.i18n) return full;

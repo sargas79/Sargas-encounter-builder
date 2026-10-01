@@ -78,10 +78,7 @@ export class CreatureCatalog {
   constructor(
     private readonly provider: PackProvider,
     private readonly tags: TagProvider = { tagsFor: () => [] },
-    private readonly selectedPacksStore: {
-      get(): string[];
-      set(ids: string[]): Promise<void>;
-    } = settingsSelectedPacks(),
+    private readonly selectedPacksStore: SelectedPacksStore = settingsSelectedPacks(),
   ) {}
 
   /* ---------------------------- packs ------------------------------- */
@@ -101,8 +98,24 @@ export class CreatureCatalog {
     return this.selectedPacksStore.get().filter((id) => !available.has(id));
   }
 
+  /**
+   * First run: select every accessible Actor pack shipped by the PF2e system (bestiaries), or all
+   * accessible Actor packs when none come from the system. Does nothing once a selection exists.
+   */
+  async ensureDefaultSelection(): Promise<boolean> {
+    if (this.selectedPacksStore.get().length > 0 || this.selectedPacksStore.initialized?.()) return false;
+    const accessible = this.availablePacks().filter((p) => p.accessible);
+    const system = accessible.filter((p) => p.packageName === "pf2e");
+    const chosen = (system.length ? system : accessible).map((p) => p.id);
+    if (chosen.length === 0) return false;
+    await this.selectedPacksStore.set(chosen);
+    this.#emit();
+    return true;
+  }
+
   async setSelectedPacks(ids: string[]): Promise<void> {
     await this.selectedPacksStore.set([...new Set(ids)]);
+    await this.selectedPacksStore.markInitialized?.();
     this.#emit();
   }
 
@@ -265,8 +278,26 @@ export class CreatureCatalog {
   }
 }
 
-function settingsSelectedPacks(): { get(): string[]; set(ids: string[]): Promise<void> } {
+export interface SelectedPacksStore {
+  get(): string[];
+  set(ids: string[]): Promise<void>;
+  /** True once the GM has changed the selection by hand (an emptied list is then respected). */
+  initialized?(): boolean;
+  markInitialized?(): Promise<void>;
+}
+
+function settingsSelectedPacks(): SelectedPacksStore {
   return {
+    initialized: () => {
+      try {
+        return !!game.settings.get(MODULE_ID, SETTINGS.packsInitialized);
+      } catch {
+        return false;
+      }
+    },
+    markInitialized: async () => {
+      await game.settings.set(MODULE_ID, SETTINGS.packsInitialized, true);
+    },
     get: () => {
       try {
         return (game.settings.get(MODULE_ID, SETTINGS.selectedPacks) as string[]) ?? [];

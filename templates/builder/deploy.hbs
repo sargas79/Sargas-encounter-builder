@@ -1,77 +1,59 @@
-<section class="tab {{#if (eq activeTab "deploy")}}active{{/if}}" data-tab="deploy" data-group="primary">
-  <div class="peb-columns">
-    <div class="peb-panel">
-      <h3>{{localize "pf2e-encounter-builder.deploy.options"}}</h3>
-      <div class="peb-filters">
-        <label class="span2">{{localize "pf2e-encounter-builder.deploy.scene"}}
-          <select name="deploy.sceneId">{{#each deploy.scenes}}<option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>{{/each}}</select>
-        </label>
-        <label>{{localize "pf2e-encounter-builder.deploy.importPolicy"}}
-          <select name="deploy.importPolicy">
-            <option value="reuse" {{#if (eq deploy.options.importPolicy "reuse")}}selected{{/if}}>{{localize "pf2e-encounter-builder.deploy.policy.reuse"}}</option>
-            <option value="fresh" {{#if (eq deploy.options.importPolicy "fresh")}}selected{{/if}}>{{localize "pf2e-encounter-builder.deploy.policy.fresh"}}</option>
-          </select>
-        </label>
-        <label>{{localize "pf2e-encounter-builder.deploy.combat"}}
-          <select name="deploy.addToCombat">
-            <option value="none" {{#if (eq deploy.options.addToCombat "none")}}selected{{/if}}>{{localize "pf2e-encounter-builder.deploy.combatNone"}}</option>
-            <option value="active" {{#if (eq deploy.options.addToCombat "active")}}selected{{/if}}>{{localize "pf2e-encounter-builder.deploy.combatActive"}}</option>
-            <option value="new" {{#if (eq deploy.options.addToCombat "new")}}selected{{/if}}>{{localize "pf2e-encounter-builder.deploy.combatNew"}}</option>
-          </select>
-        </label>
-        <label><input type="checkbox" name="deploy.hidden" {{#if deploy.options.hidden}}checked{{/if}}> {{localize "pf2e-encounter-builder.deploy.hidden"}}</label>
-        <label><input type="checkbox" name="deploy.numberDuplicates" {{#if deploy.options.numberDuplicates}}checked{{/if}}> {{localize "pf2e-encounter-builder.deploy.numberDuplicates"}}</label>
+<section class="seb-tab" data-tab="deploy">
+  {{#unless ready}}
+  <div class="seb-empty seb-gate"><i class="fa-solid fa-lock"></i><p class="seb-empty-title">{{gate.title}}</p><p class="seb-empty-hint">{{gate.hint}}</p></div>
+  {{else}}
+  <div class="seb-columns">
+    <div class="seb-panel">
+      <div class="seb-panel-head"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.deploy.options"}}</span></div>
+      <div class="seb-form-row">
+        <div class="seb-field seb-field-wide"><label for="seb-deploy-scene">{{localize "sargas-encounter-builder.deploy.scene"}}</label><select id="seb-deploy-scene" name="deploy.sceneId">{{#each deploy.scenes}}<option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>{{/each}}</select></div>
+        <div class="seb-field"><label for="seb-deploy-policy">{{localize "sargas-encounter-builder.deploy.importPolicy"}}</label>
+          <select id="seb-deploy-policy" name="deploy.importPolicy">
+            <option value="reuse" {{#if (eq deploy.options.importPolicy "reuse")}}selected{{/if}}>{{localize "sargas-encounter-builder.deploy.policy.reuse"}}</option>
+            <option value="fresh" {{#if (eq deploy.options.importPolicy "fresh")}}selected{{/if}}>{{localize "sargas-encounter-builder.deploy.policy.fresh"}}</option>
+          </select></div>
+        <div class="seb-field"><label for="seb-deploy-combat">{{localize "sargas-encounter-builder.deploy.combat"}}</label>
+          <select id="seb-deploy-combat" name="deploy.addToCombat">
+            <option value="none" {{#if (eq deploy.options.addToCombat "none")}}selected{{/if}}>{{localize "sargas-encounter-builder.deploy.combatNone"}}</option>
+            <option value="active" {{#if (eq deploy.options.addToCombat "active")}}selected{{/if}}>{{localize "sargas-encounter-builder.deploy.combatActive"}}</option>
+            <option value="new" {{#if (eq deploy.options.addToCombat "new")}}selected{{/if}}>{{localize "sargas-encounter-builder.deploy.combatNew"}}</option>
+          </select></div>
+        <label class="seb-checkbox"><input type="checkbox" name="deploy.hidden" {{#if deploy.options.hidden}}checked{{/if}}> <span>{{localize "sargas-encounter-builder.deploy.hidden"}}</span></label>
+        <label class="seb-checkbox"><input type="checkbox" name="deploy.numberDuplicates" {{#if deploy.options.numberDuplicates}}checked{{/if}}> <span>{{localize "sargas-encounter-builder.deploy.numberDuplicates"}}</span></label>
       </div>
-      <div class="peb-toolbar">
-        <span>{{localize "pf2e-encounter-builder.deploy.origin"}}: <strong>{{deploy.origin}}</strong></span>
-        <button type="button" data-action="ext" data-ext="deploy" data-method="pickOrigin" {{#if deploy.pickingOrigin}}disabled{{/if}}><i class="fa-solid fa-crosshairs"></i> {{#if deploy.pickingOrigin}}{{localize "pf2e-encounter-builder.deploy.clickCanvas"}}{{else}}{{localize "pf2e-encounter-builder.deploy.pickOrigin"}}{{/if}}</button>
-        <button type="button" data-action="ext" data-ext="deploy" data-method="clearOrigin"><i class="fa-solid fa-xmark"></i></button>
+      <div class="seb-toolbar">
+        <span class="seb-text-dim">{{localize "sargas-encounter-builder.deploy.origin"}}: <strong>{{deploy.origin}}</strong></span>
+        <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="deploy" data-method="pickOrigin" {{#if deploy.pickingOrigin}}disabled{{/if}}><i class="fa-solid fa-crosshairs"></i> {{#if deploy.pickingOrigin}}{{localize "sargas-encounter-builder.deploy.clickCanvas"}}{{else}}{{localize "sargas-encounter-builder.deploy.pickOrigin"}}{{/if}}</button>
+        <button type="button" class="seb-icon-button" data-action="ext" data-ext="deploy" data-method="clearOrigin" data-tooltip="{{localize 'sargas-encounter-builder.deploy.originCenter'}}" aria-label="{{localize 'sargas-encounter-builder.deploy.originCenter'}}"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="peb-messages">
-        {{#each deploy.preview.blockers}}<div class="peb-msg error">{{this}}</div>{{/each}}
-        {{#each deploy.preview.warnings}}<div class="peb-msg warn">{{this}}</div>{{/each}}
+      {{#each deploy.preview.blockers}}<div class="seb-note is-error">{{this}}</div>{{/each}}
+      {{#each deploy.preview.warnings}}<div class="seb-note is-warn">{{this}}</div>{{/each}}
+      <div class="seb-toolbar">
+        <button type="button" class="seb-button seb-button-primary" data-action="ext" data-ext="deploy" data-method="deploy" {{#unless deploy.canDeploy}}disabled{{/unless}}><i class="fa-solid fa-chess-knight"></i> {{localize "sargas-encounter-builder.deploy.deployButton"}}</button>
+        {{#if deploy.busy}}<span class="seb-text-dim"><i class="fa-solid fa-spinner fa-spin"></i> {{localize "sargas-encounter-builder.deploy.working"}}</span>{{/if}}
       </div>
-      <div class="peb-toolbar">
-        <button type="button" data-action="ext" data-ext="deploy" data-method="deploy" {{#unless deploy.canDeploy}}disabled{{/unless}}><i class="fa-solid fa-chess-knight"></i> {{localize "pf2e-encounter-builder.deploy.deployButton"}}</button>
-        {{#if deploy.busy}}<span class="peb-tags">{{localize "pf2e-encounter-builder.deploy.working"}}</span>{{/if}}
-      </div>
-      <div class="peb-tags">{{localize "pf2e-encounter-builder.deploy.neverHint"}}</div>
+      <p class="seb-hint">{{localize "sargas-encounter-builder.deploy.neverHint"}}</p>
     </div>
-    <div class="peb-panel">
-      <h3>{{localize "pf2e-encounter-builder.deploy.preview"}} ({{deploy.preview.totalTokens}} {{localize "pf2e-encounter-builder.deploy.tokens"}})</h3>
-      {{#if deploy.preview.scene}}<div class="peb-tags">{{deploy.preview.scene.name}} · {{deploy.preview.scene.gridLabel}}</div>{{/if}}
-      <div class="peb-scroll">
-        <table class="peb-table">
-          <thead><tr><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.qty"}}</th><th>{{localize "pf2e-encounter-builder.deploy.policyHeader"}}</th></tr></thead>
-          <tbody>
-          {{#each deploy.preview.actors}}
-          <tr><td>{{this.name}}<div class="peb-tags">{{this.sourceUuid}}</div></td><td class="num">{{this.quantity}}</td><td>{{this.policyLabel}}</td></tr>
-          {{else}}
-          <tr><td colspan="3">{{localize "pf2e-encounter-builder.build.emptyDraft"}}</td></tr>
-          {{/each}}
-          </tbody>
-        </table>
+    <div class="seb-panel seb-panel-raised">
+      <div class="seb-panel-head"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.deploy.preview"}} <span class="seb-text-dim">· {{deploy.preview.totalTokens}} {{localize "sargas-encounter-builder.deploy.tokens"}}{{#if deploy.preview.scene}} · {{deploy.preview.scene.name}} · {{deploy.preview.scene.gridLabel}}{{/if}}</span></span></div>
+      <div class="seb-scroll seb-list">
+        {{#each deploy.preview.actors}}
+        <div class="seb-row"><i class="fa-solid fa-chess-pawn seb-row-icon"></i><div class="seb-row-main"><span class="seb-row-name">{{this.name}}</span><span class="seb-row-meta">{{this.policyLabel}} · <span class="seb-mono">{{this.sourceUuid}}</span></span></div><div class="seb-row-controls"><span class="seb-pill is-level">× {{this.quantity}}</span></div></div>
+        {{else}}
+        <div class="seb-empty"><i class="fa-solid fa-skull"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.build.emptyDraftTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.deploy.emptyHint"}}</p></div>
+        {{/each}}
       </div>
       {{#if deploy.outcome}}
-      <h3>{{localize "pf2e-encounter-builder.deploy.result"}}</h3>
-      <div class="peb-messages">
-        <div class="peb-msg {{#if deploy.outcome.partial}}warn{{else}}ok{{/if}}">
-          {{localize "pf2e-encounter-builder.deploy.summary" actors=deploy.outcome.summary.created.Actor tokens=deploy.outcome.summary.created.Token combats=deploy.outcome.summary.created.Combat combatants=deploy.outcome.summary.created.Combatant reused=deploy.outcome.summary.reused}}
-          {{#if deploy.outcome.unplaced}} · {{localize "pf2e-encounter-builder.deploy.unplaced" count=deploy.outcome.unplaced}}{{/if}}
-        </div>
-        {{#each deploy.outcome.failures}}<div class="peb-msg error">{{this}}</div>{{/each}}
-        {{#if deploy.outcome.cleanupDone}}<div class="peb-msg">{{localize "pf2e-encounter-builder.deploy.cleanupDone" removed=deploy.outcome.cleanupDone.removed failed=deploy.outcome.cleanupDone.failed}}</div>{{/if}}
-      </div>
-      <details><summary>{{localize "pf2e-encounter-builder.deploy.ledger"}}</summary>
-        <div class="peb-tags">{{#each deploy.outcome.created}}<div>+ {{this}}</div>{{/each}}{{#each deploy.outcome.reused}}<div>= {{this}}</div>{{/each}}</div>
-      </details>
+      <div class="seb-group-header"><span>{{localize "sargas-encounter-builder.deploy.result"}}</span></div>
+      <div class="seb-note {{#if deploy.outcome.partial}}is-warn{{else}}is-ok{{/if}}">{{localize "sargas-encounter-builder.deploy.summary" actors=deploy.outcome.summary.created.Actor tokens=deploy.outcome.summary.created.Token combats=deploy.outcome.summary.created.Combat combatants=deploy.outcome.summary.created.Combatant reused=deploy.outcome.summary.reused}}{{#if deploy.outcome.unplaced}} · {{localize "sargas-encounter-builder.deploy.unplaced" count=deploy.outcome.unplaced}}{{/if}}</div>
+      {{#each deploy.outcome.failures}}<div class="seb-note is-error">{{this}}</div>{{/each}}
+      {{#if deploy.outcome.cleanupDone}}<div class="seb-note">{{localize "sargas-encounter-builder.deploy.cleanupDone" removed=deploy.outcome.cleanupDone.removed failed=deploy.outcome.cleanupDone.failed}}</div>{{/if}}
+      <details class="seb-details"><summary>{{localize "sargas-encounter-builder.deploy.ledger"}}</summary><div class="seb-hint">{{#each deploy.outcome.created}}<div>+ {{this}}</div>{{/each}}{{#each deploy.outcome.reused}}<div>= {{this}}</div>{{/each}}</div></details>
       {{#if deploy.outcome.canCleanup}}
-      <div class="peb-toolbar">
-        <button type="button" data-action="ext" data-ext="deploy" data-method="cleanup"><i class="fa-solid fa-broom"></i> {{localize "pf2e-encounter-builder.deploy.cleanup"}}</button>
-        <span class="peb-tags">{{localize "pf2e-encounter-builder.deploy.cleanupHint"}}</span>
-      </div>
+      <div class="seb-toolbar"><button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="deploy" data-method="cleanup"><i class="fa-solid fa-broom"></i> {{localize "sargas-encounter-builder.deploy.cleanup"}}</button><span class="seb-hint">{{localize "sargas-encounter-builder.deploy.cleanupHint"}}</span></div>
       {{/if}}
       {{/if}}
     </div>
   </div>
+  {{/unless}}
 </section>

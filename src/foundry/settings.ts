@@ -9,7 +9,9 @@ export function registerSettings(): void {
   register(SETTINGS.partyProfiles, { scope: "world", config: false, type: Array, default: [] });
   register(SETTINGS.activeParty, { scope: "world", config: false, type: String, default: "" });
   register(SETTINGS.selectedPacks, { scope: "world", config: false, type: Array, default: [] });
+  register(SETTINGS.packsInitialized, { scope: "world", config: false, type: Boolean, default: false });
   register(SETTINGS.dataSchemaVersion, { scope: "world", config: false, type: Number, default: 0 });
+  register(SETTINGS.uiState, { scope: "client", config: false, type: Object, default: {} });
 
   // Visible configuration.
   register(SETTINGS.tableMaxDepth, {

@@ -1,16 +1,16 @@
 {
-  "id": "pf2e-encounter-builder",
-  "title": "PF2e Encounter Builder",
+  "id": "sargas-encounter-builder",
+  "title": "Sargas - Encounter Builder",
   "description": "GM workspace for Pathfinder Second Edition: party profiles, XP budgets, compendium creature browsing, balanced random generation, classic encounter tables, saved encounters, and explicit scene deployment.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "authors": [
     {
-      "name": "sargas79"
+      "name": "Diego Vescovini",
+      "github": "sargas79"
     }
   ],
   "compatibility": {
-    "minimum": "13",
-    "maximum": "14"
+    "minimum": "14"
   },
   "relationships": {
     "systems": [
@@ -18,13 +18,13 @@
         "id": "pf2e",
         "type": "system",
         "compatibility": {
-          "minimum": "7.0.0"
+          "minimum": "8.0.0"
         }
       }
     ]
   },
   "esmodules": [
-    "dist/pf2e-encounter-builder.js"
+    "dist/sargas-encounter-builder.js"
   ],
   "styles": [
     "styles/encounter-builder.css"
@@ -37,7 +37,10 @@
     }
   ],
   "url": "https://github.com/sargas79/Sargas-encounter-builder",
+  "readme": "https://github.com/sargas79/Sargas-encounter-builder#readme",
+  "bugs": "https://github.com/sargas79/Sargas-encounter-builder/issues",
+  "changelog": "https://github.com/sargas79/Sargas-encounter-builder/blob/main/CHANGELOG.md",
   "manifest": "https://github.com/sargas79/Sargas-encounter-builder/releases/latest/download/module.json",
-  "download": "https://github.com/sargas79/Sargas-encounter-builder/releases/download/v0.1.0/pf2e-encounter-builder.zip",
+  "download": "https://github.com/sargas79/Sargas-encounter-builder/releases/latest/download/sargas-encounter-builder.zip",
   "license": "LICENSE"
 }

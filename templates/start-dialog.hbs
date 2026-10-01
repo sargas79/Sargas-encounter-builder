@@ -1,0 +1,32 @@
+{{!-- Start dialog body: party, threat, policy, mode. Segments are wired by start-dialog.ts. --}}
+<div class="seb-form seb-start-body">
+  <div class="seb-field">
+    <label for="seb-start-party">{{localize "sargas-encounter-builder.start.party"}}</label>
+    <select id="seb-start-party" name="party">
+      {{#if hasPartyActors}}<optgroup label="{{localize 'sargas-encounter-builder.party.partyActors'}}">{{#each partyOptions}}{{#if (eq this.group "actors")}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}{{#if this.hint}} — {{this.hint}}{{/if}}</option>{{/if}}{{/each}}</optgroup>{{/if}}
+      <optgroup label="{{localize 'sargas-encounter-builder.party.savedProfiles'}}">{{#each partyOptions}}{{#if (eq this.group "profiles")}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/if}}{{/each}}</optgroup>
+      {{#each partyOptions}}{{#if (eq this.group "new")}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/if}}{{/each}}
+    </select>
+    {{#unless hasPartyActors}}<p class="seb-hint">{{localize "sargas-encounter-builder.start.noPartyActors"}}</p>{{/unless}}
+  </div>
+  <div class="seb-field">
+    <label>{{localize "sargas-encounter-builder.start.threat"}}</label>
+    <input type="hidden" name="threat" value="{{#each threats}}{{#if this.active}}{{this.value}}{{/if}}{{/each}}">
+    <div class="seb-segments" data-segment-group="threat" role="group">{{#each threats}}<button type="button" class="seb-segment{{#if this.active}} is-active{{/if}}" data-value="{{this.value}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}">{{this.label}}</button>{{/each}}</div>
+  </div>
+  <div class="seb-form-row">
+    <div class="seb-field seb-field-wide">
+      <label for="seb-start-policy">{{localize "sargas-encounter-builder.start.policy"}}</label>
+      <select id="seb-start-policy" name="policy">{{#each policies}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+      <p class="seb-hint">{{localize "sargas-encounter-builder.start.policyHint"}}</p>
+    </div>
+    <div class="seb-field seb-field-short" data-manual-level><label for="seb-start-manual">{{localize "sargas-encounter-builder.party.manualLevel"}}</label><input id="seb-start-manual" type="number" name="manualLevel" min="1" max="20" value="{{manualLevel}}"></div>
+  </div>
+  <div class="seb-field">
+    <label>{{localize "sargas-encounter-builder.start.modeLabel"}}</label>
+    <input type="hidden" name="mode" value="{{#each modes}}{{#if this.active}}{{this.value}}{{/if}}{{/each}}">
+    <div class="seb-mode-grid" data-segment-group="mode" role="group">
+      {{#each modes}}<button type="button" class="seb-segment seb-mode{{#if this.active}} is-active{{/if}}" data-value="{{this.value}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}"><i class="{{this.icon}}"></i><span class="seb-mode-label">{{this.label}}</span><span class="seb-mode-hint">{{this.hint}}</span></button>{{/each}}
+    </div>
+  </div>
+</div>
