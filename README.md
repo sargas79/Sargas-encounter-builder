@@ -12,7 +12,15 @@ and explicit scene deployment.
 
 ## Installation
 
-The repository ships source; build it once:
+**From a release (recommended):** in Foundry's _Add-on Modules_ → _Install Module_, paste this manifest URL:
+
+```
+https://github.com/sargas79/Sargas-encounter-builder/releases/latest/download/module.json
+```
+
+Releases are on the [GitHub releases page](https://github.com/sargas79/Sargas-encounter-builder/releases).
+
+**From source:** build it once:
 
 ```bash
 npm ci
