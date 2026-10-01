@@ -146,10 +146,10 @@ declare global {
   }
 
   interface CombatDocument extends FoundryDocument {
+    combatants: { contents: { initiative?: number | null }[] };
     scene: SceneDocument | null;
     started: boolean;
     round: number;
-    combatants: { contents: any[] };
   }
 
   interface FoundryRoll {
@@ -258,6 +258,7 @@ declare global {
     app: any;
     grid: any;
     mousePosition?: { x: number; y: number };
+    canvasCoordinatesFromClient?(point: { x: number; y: number }): { x: number; y: number };
   };
   const ui: {
     notifications: {

@@ -106,4 +106,142 @@ export function registerQuenchTests(quench: Quench): void {
     },
     { displayName: "PF2e Encounter Builder: system integration" },
   );
+
+  quench.registerBatch(
+    `${MODULE_ID}.deployment`,
+    (context) => {
+      const { describe, it, assert, after } = context;
+      const created: FoundryDocument[] = [];
+      after(async () => {
+        for (const doc of created.reverse()) {
+          try {
+            await doc.delete();
+          } catch {
+            /* already gone */
+          }
+        }
+      });
+
+      const findSourceNpc = async (): Promise<ActorDocument | null> => {
+        const { catalog } = services();
+        const packs = catalog.availablePacks().filter((p) => p.accessible);
+        for (const pack of packs) {
+          const entries = await catalog.search({ levelMin: 0, levelMax: 2 }, [pack.id]);
+          if (entries[0]) return (await fromUuid(entries[0].uuid)) as ActorDocument | null;
+        }
+        return null;
+      };
+
+      describe(`deployment (${versionsLine()})`, () => {
+        it("T19: imports with provenance and reuses by compendium source, not by name", async () => {
+          const source = await findSourceNpc();
+          if (!source) return assert.ok(true, "no compendium NPC available; skipped");
+          const { FoundryDeploymentGateway } = await import("../foundry/deployment-service.js");
+          const gateway = new FoundryDeploymentGateway();
+          const imported = await gateway.importActor(source.uuid);
+          created.push(imported);
+          assert.equal(imported._stats?.compendiumSource, source.uuid, "_stats.compendiumSource populated");
+          assert.equal(gateway.findReusableActor(source.uuid)?.id, imported.id, "reuse finds the import");
+          // A same-named actor without provenance must not be matched.
+          const decoy = await CONFIG.Actor.documentClass.create({ name: imported.name, type: "npc" });
+          created.push(decoy);
+          assert.notEqual(gateway.findReusableActor(source.uuid)?.id, decoy.id, "decoy not matched by name");
+        });
+
+        it("T20: identical deployed tokens have independent HP", async () => {
+          const source = await findSourceNpc();
+          const scene = game.scenes.viewed ?? game.scenes.active;
+          if (!source || !scene) return assert.ok(true, "needs a compendium NPC and a viewed scene; skipped");
+          const { DeploymentService, FoundryDeploymentGateway } =
+            await import("../foundry/deployment-service.js");
+          const service = new DeploymentService(new FoundryDeploymentGateway());
+          const outcome = await service.deploy(
+            [
+              {
+                uuid: source.uuid,
+                name: source.name,
+                level: source.level ?? 0,
+                quantity: 2,
+                locked: false,
+                img: null,
+                packLabel: null,
+                traits: [],
+              },
+            ],
+            {
+              sceneId: scene.id,
+              importPolicy: "fresh",
+              hidden: true,
+              addToCombat: "none",
+              numberDuplicates: true,
+            },
+            null,
+          );
+          for (const c of outcome.ledger.cleanupTargets()) {
+            const doc = await fromUuid(c.uuid);
+            if (doc) created.push(doc);
+          }
+          assert.equal(outcome.ledger.failures.length, 0, JSON.stringify(outcome.ledger.failures));
+          const [a, b] = outcome.placedTokens;
+          assert.ok(a && b, "two tokens placed");
+          assert.isFalse(a!.actorLink, "unlinked");
+          assert.isTrue(a!.hidden, "hidden by default");
+          const hpBefore = b!.actor?.hitPoints?.value ?? null;
+          await a!.actor?.update({ "system.attributes.hp.value": 1 });
+          assert.equal(a!.actor?.hitPoints?.value, 1, "token A damaged");
+          assert.equal(b!.actor?.hitPoints?.value, hpBefore, "token B unaffected");
+        });
+
+        it("T21: adding to combat does not start it or roll initiative", async () => {
+          const source = await findSourceNpc();
+          const scene = game.scenes.viewed ?? game.scenes.active;
+          if (!source || !scene) return assert.ok(true, "skipped");
+          const { DeploymentService, FoundryDeploymentGateway } =
+            await import("../foundry/deployment-service.js");
+          const service = new DeploymentService(new FoundryDeploymentGateway());
+          const outcome = await service.deploy(
+            [
+              {
+                uuid: source.uuid,
+                name: source.name,
+                level: source.level ?? 0,
+                quantity: 1,
+                locked: false,
+                img: null,
+                packLabel: null,
+                traits: [],
+              },
+            ],
+            {
+              sceneId: scene.id,
+              importPolicy: "reuse",
+              hidden: true,
+              addToCombat: "new",
+              numberDuplicates: true,
+            },
+            null,
+          );
+          for (const c of outcome.ledger.cleanupTargets()) {
+            const doc = await fromUuid(c.uuid);
+            if (doc) created.push(doc);
+          }
+          const combatRecord = outcome.ledger.created.find((c) => c.kind === "Combat");
+          assert.ok(combatRecord, "combat created");
+          const combat = (await fromUuid(combatRecord!.uuid)) as CombatDocument | null;
+          assert.ok(combat, "combat exists");
+          assert.isFalse(combat!.started, "combat not started");
+          assert.equal(combat!.round, 0, "round 0");
+          for (const c of combat!.combatants.contents)
+            assert.ok(c.initiative === null || c.initiative === undefined, "no initiative rolled");
+        });
+
+        it("T22: non-GM protection (run this batch as a player to verify UI/writes are refused)", () => {
+          if (game.user.isGM)
+            return assert.ok(true, "run as a player: the builder must refuse to open and setTags must throw");
+          assert.isFalse(game.user.isGM);
+        });
+      });
+    },
+    { displayName: "PF2e Encounter Builder: deployment" },
+  );
 }

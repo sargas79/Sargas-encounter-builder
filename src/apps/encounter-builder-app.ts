@@ -37,6 +37,7 @@ import { services } from "../foundry/services.js";
 import { getSetting } from "../foundry/settings.js";
 import { SETTINGS } from "../constants.js";
 import { GeneratorPanel } from "./generator-panel.js";
+import { DeployPanel } from "./deploy-panel.js";
 
 const TEMPLATES = `modules/${MODULE_ID}/templates/builder`;
 
@@ -119,7 +120,10 @@ export class EncounterBuilderApp extends Base {
   #listenersAttached = false;
   #search = debounce(() => void this.#runSearch(), 250);
   /** Extensions: generator, tables, saved, deploy. Each may provide prepareContext/onChange/onDrop. */
-  extensions: Record<string, unknown> = { generator: new GeneratorPanel(this) };
+  extensions: Record<string, unknown> = {
+    generator: new GeneratorPanel(this),
+    deploy: new DeployPanel(this),
+  };
 
   static async open(): Promise<EncounterBuilderApp | null> {
     if (!isGM()) {
@@ -155,6 +159,7 @@ export class EncounterBuilderApp extends Base {
     super._onClose?.(options);
     for (const off of this.#unsubscribe) off();
     this.#unsubscribe = [];
+    for (const ext of Object.values(this.extensions)) (ext as { dispose?: () => void }).dispose?.();
     this.#listenersAttached = false;
     EncounterBuilderApp.#instance = null;
   }
