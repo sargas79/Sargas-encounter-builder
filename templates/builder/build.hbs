@@ -1,0 +1,105 @@
+<section class="tab {{#if (eq activeTab "build")}}active{{/if}}" data-tab="build" data-group="primary">
+  <div class="peb-columns">
+    <div class="peb-panel">
+      <h3>{{localize "pf2e-encounter-builder.build.catalog"}}</h3>
+      <details class="peb-packs" {{#if build.noPacks}}open{{/if}}>
+        <summary>{{localize "pf2e-encounter-builder.build.packs"}} <button type="button" data-action="refreshCatalog" {{#if busy}}disabled{{/if}}><i class="fa-solid fa-rotate"></i></button></summary>
+        {{#each build.packs}}
+        <label><input type="checkbox" name="pack" data-pack-id="{{this.id}}" {{#if this.selected}}checked{{/if}} {{#unless this.accessible}}disabled{{/unless}}> {{this.label}} <span class="peb-tags">({{this.packageName}}) {{this.stateLabel}}</span></label>
+        {{/each}}
+        {{#each build.missingPacks}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.build.packState.missingId" id=this}}</div>{{/each}}
+      </details>
+      <div class="peb-filters">
+        <label class="span2">{{localize "pf2e-encounter-builder.build.search"}} <input type="search" name="filter.search" value="{{build.filter.search}}" placeholder="{{localize "pf2e-encounter-builder.build.searchPlaceholder"}}"></label>
+        <label>{{localize "pf2e-encounter-builder.build.levelMin"}} <input type="number" name="filter.levelMin" value="{{build.filter.levelMin}}"></label>
+        <label>{{localize "pf2e-encounter-builder.build.levelMax"}} <input type="number" name="filter.levelMax" value="{{build.filter.levelMax}}"></label>
+        <label>{{localize "pf2e-encounter-builder.build.relativeMin"}} <input type="number" name="filter.relativeMin" value="{{build.filter.relativeMin}}"></label>
+        <label>{{localize "pf2e-encounter-builder.build.relativeMax"}} <input type="number" name="filter.relativeMax" value="{{build.filter.relativeMax}}"></label>
+        <label>{{localize "pf2e-encounter-builder.build.traits"}} <input type="text" name="filter.traits" value="{{build.traits}}" placeholder="undead, fire"></label>
+        <label>{{localize "pf2e-encounter-builder.build.tags"}} <input type="text" name="filter.tags" value="{{build.tags}}" list="peb-tag-list" placeholder="environment:forest"></label>
+        <datalist id="peb-tag-list">{{#each build.allTags}}<option value="{{this}}"></option>{{/each}}</datalist>
+        <label>{{localize "pf2e-encounter-builder.build.rarity"}}
+          <select name="filter.rarity"><option value="">—</option><option value="common">common</option><option value="uncommon">uncommon</option><option value="rare">rare</option><option value="unique">unique</option></select>
+        </label>
+      </div>
+      <div class="peb-scroll">
+        {{#if busy}}<div class="peb-msg">{{localize "pf2e-encounter-builder.build.loading"}}</div>{{/if}}
+        {{#if build.noPacks}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.build.noPacks"}}</div>{{/if}}
+        <table class="peb-table">
+          <thead><tr><th></th><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.level"}}</th><th class="num">±</th><th>{{localize "pf2e-encounter-builder.build.traits"}}</th><th></th></tr></thead>
+          <tbody>
+          {{#each build.results}}
+          <tr data-uuid="{{this.uuid}}">
+            <td>{{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}</td>
+            <td>{{this.name}}<div class="peb-tags">{{this.packLabel}}{{#if this.tagsLabel}} · {{this.tagsLabel}}{{/if}}</div></td>
+            <td class="num">{{this.level}}</td>
+            <td class="num">{{#if (ne this.relative null)}}{{this.relative}}{{/if}}</td>
+            <td><span class="peb-tags">{{this.traitsLabel}}</span></td>
+            <td class="actions">
+              <button type="button" data-action="addCreature" title="{{localize "pf2e-encounter-builder.build.add"}}"><i class="fa-solid fa-plus"></i></button>
+              <button type="button" data-action="inspectCreature" title="{{localize "pf2e-encounter-builder.build.inspect"}}"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" data-action="editTags" title="{{localize "pf2e-encounter-builder.build.editTags"}}"><i class="fa-solid fa-tag"></i></button>
+              <button type="button" data-action="ext" data-ext="generator" data-method="exclude" title="{{localize "pf2e-encounter-builder.generator.exclude"}}"><i class="fa-solid fa-ban"></i></button>
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="6">{{#unless busy}}{{localize "pf2e-encounter-builder.build.noResults"}}{{/unless}}</td></tr>
+          {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="peb-panel">
+      <h3>{{localize "pf2e-encounter-builder.build.encounter"}} ({{build.draftCount}})</h3>
+      <div class="peb-dropzone" data-purpose="draft">{{localize "pf2e-encounter-builder.build.dropHint"}}</div>
+      <div class="peb-scroll">
+        <table class="peb-table">
+          <thead><tr><th></th><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.level"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.qty"}}</th><th class="num">XP</th><th class="num">Σ</th><th></th></tr></thead>
+          <tbody>
+          {{#each build.draft}}
+          <tr data-uuid="{{this.uuid}}" class="{{#if this.locked}}locked{{/if}}">
+            <td>{{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}</td>
+            <td>{{this.name}} {{#if this.statusLabel}}<span class="status-{{this.status}}">{{this.statusLabel}}</span>{{/if}}<div class="peb-tags">{{this.packLabel}}</div></td>
+            <td class="num">{{this.level}}{{#if (ne this.relative null)}} ({{this.relative}}){{/if}}</td>
+            <td class="num"><input type="number" name="quantity" min="0" value="{{this.quantity}}"></td>
+            <td class="num">{{#if (ne this.xpEach null)}}{{this.xpEach}}{{else}}—{{/if}}</td>
+            <td class="num">{{#if (ne this.subtotal null)}}{{this.subtotal}}{{else}}—{{/if}}</td>
+            <td class="actions">
+              <button type="button" data-action="lockCreature" title="{{localize "pf2e-encounter-builder.build.lock"}}"><i class="fa-solid {{#if this.locked}}fa-lock{{else}}fa-lock-open{{/if}}"></i></button>
+              <button type="button" data-action="inspectCreature" title="{{localize "pf2e-encounter-builder.build.inspect"}}"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" data-action="ext" data-ext="generator" data-method="exclude" title="{{localize "pf2e-encounter-builder.generator.exclude"}}"><i class="fa-solid fa-ban"></i></button>
+              <button type="button" data-action="replaceEntry" title="{{localize "pf2e-encounter-builder.generator.replace"}}" {{#if this.locked}}disabled{{/if}}><i class="fa-solid fa-shuffle"></i></button>
+              <button type="button" data-action="removeCreature" title="{{localize "pf2e-encounter-builder.build.remove"}}"><i class="fa-solid fa-xmark"></i></button>
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="7">{{localize "pf2e-encounter-builder.build.emptyDraft"}}</td></tr>
+          {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{#if build.evaluation}}
+      <div class="peb-evaluation">
+        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.selected"}}</label>{{build.evaluation.selectedLabel}}</div>
+        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.target"}}</label>{{#if (ne build.evaluation.target null)}}{{build.evaluation.target}} XP{{else}}—{{/if}}</div>
+        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.supported"}}</label>{{build.evaluation.supportedXP}} XP</div>
+        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.difference"}}</label>{{build.evaluation.differenceLabel}}</div>
+        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.completeness"}}</label>{{build.evaluation.completeLabel}}</div>
+        <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.inferred"}}</label>{{build.evaluation.inferredLabel}}</div>
+      </div>
+      <div class="peb-messages">
+        {{#if build.evaluation.systemCalculation}}<div class="peb-msg">{{localize "pf2e-encounter-builder.evaluation.pwolSystem"}}</div>{{/if}}
+        {{#if build.evaluation.variantUnsupported}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.evaluation.pwolUnsupported"}}</div>{{/if}}
+        {{#each build.evaluation.warnings}}<div class="peb-msg {{this.level}}">{{this.text}}</div>{{/each}}
+      </div>
+      {{else}}
+      <div class="peb-msg warn">{{localize "pf2e-encounter-builder.evaluation.blocked"}}</div>
+      {{/if}}
+      <div class="peb-toolbar">
+        <button type="button" data-action="clearDraft"><i class="fa-solid fa-eraser"></i> {{localize "pf2e-encounter-builder.build.clear"}}</button>
+        {{> "modules/pf2e-encounter-builder/templates/builder/build-actions.hbs"}}
+      </div>
+      {{> "modules/pf2e-encounter-builder/templates/builder/generator.hbs"}}
+    </div>
+  </div>
+</section>

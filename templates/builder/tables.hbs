@@ -1,0 +1,62 @@
+<section class="tab {{#if (eq activeTab "tables")}}active{{/if}}" data-tab="tables" data-group="primary">
+  <div class="peb-columns">
+    <div class="peb-panel">
+      <h3>{{localize "pf2e-encounter-builder.tables.title"}}</h3>
+      <div class="peb-toolbar">
+        <select name="tables.selected">
+          <option value="">{{localize "pf2e-encounter-builder.tables.choose"}}</option>
+          {{#each tables.tables}}<option value="{{this.uuid}}" {{#if this.selected}}selected{{/if}}>{{this.name}} ({{this.formula}}){{#if this.configured}} ★{{/if}}</option>{{/each}}
+        </select>
+        <button type="button" data-action="ext" data-ext="tables" data-method="createTable"><i class="fa-solid fa-plus"></i> {{localize "pf2e-encounter-builder.tables.create"}}</button>
+        <button type="button" data-action="ext" data-ext="tables" data-method="openEditor" {{#unless tables.selected}}disabled{{/unless}}><i class="fa-solid fa-pen"></i> {{localize "pf2e-encounter-builder.tables.edit"}}</button>
+        <button type="button" data-action="ext" data-ext="tables" data-method="validate" {{#unless tables.selected}}disabled{{/unless}}><i class="fa-solid fa-check"></i></button>
+      </div>
+      <div class="peb-dropzone" data-purpose="table">{{localize "pf2e-encounter-builder.tables.dropHint"}}</div>
+      <div class="peb-toolbar">
+        <button type="button" data-action="ext" data-ext="tables" data-method="roll" {{#unless tables.canRoll}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> {{localize "pf2e-encounter-builder.tables.roll"}}</button>
+        <span class="peb-tags">{{localize "pf2e-encounter-builder.tables.rollHint"}}</span>
+      </div>
+      {{#if tables.report}}
+      <h3>{{localize "pf2e-encounter-builder.tables.trace"}}</h3>
+      <div class="peb-trace">{{tables.report.trace}}</div>
+      {{/if}}
+    </div>
+    <div class="peb-panel">
+      <h3>{{localize "pf2e-encounter-builder.tables.result"}}{{#if tables.report}}: {{tables.report.tableName}}{{/if}}</h3>
+      {{#if tables.report}}
+        {{#unless tables.report.encounterOccurred}}<div class="peb-msg">{{localize "pf2e-encounter-builder.tables.noEncounter"}}</div>{{/unless}}
+        {{#if tables.report.replacementWarning}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.tables.replacementWarning"}}</div>{{/if}}
+        {{#each tables.report.errors}}<div class="peb-msg error">{{this}}</div>{{/each}}
+        {{#if tables.report.stoppedByLimit}}<div class="peb-msg error">{{localize "pf2e-encounter-builder.tables.stoppedByLimit"}}</div>{{/if}}
+        <div class="peb-scroll">
+          {{#if tables.report.hasCreatures}}
+          <table class="peb-table">
+            <thead><tr><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.level"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.qty"}}</th></tr></thead>
+            <tbody>{{#each tables.report.creatures}}<tr><td>{{this.name}}</td><td class="num">{{this.levelLabel}}</td><td class="num">{{this.quantity}}</td></tr>{{/each}}</tbody>
+          </table>
+          {{/if}}
+          {{#each tables.report.unavailable}}<div class="peb-msg error">{{localize "pf2e-encounter-builder.tables.unavailable" uuid=this.uuid quantity=this.quantity}}</div>{{/each}}
+          {{#each tables.report.narratives}}<div class="peb-msg"><strong>{{this.kindLabel}}</strong>: {{this.text}}{{#if this.notes}} — {{this.notes}}{{/if}}{{#if this.journalUuid}} <a class="content-link" data-uuid="{{this.journalUuid}}"><i class="fa-solid fa-book"></i></a>{{/if}}</div>{{/each}}
+          {{#each tables.report.templates}}<div class="peb-msg">{{localize "pf2e-encounter-builder.tables.templateRow"}}: {{this.text}} ({{this.candidates}} {{localize "pf2e-encounter-builder.tables.candidates"}}{{#if this.traits}}, {{this.traits}}{{/if}})</div>{{/each}}
+          {{#each tables.report.notes}}<div class="peb-msg">{{localize "pf2e-encounter-builder.tables.gmNote"}}: {{this}}</div>{{/each}}
+        </div>
+        {{#if tables.report.classicEvaluation}}
+        <div class="peb-evaluation">
+          <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.supported"}}</label>{{tables.report.classicEvaluation.supportedXP}} XP</div>
+          <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.inferred"}}</label>{{tables.report.classicEvaluation.inferredLabel}}</div>
+          <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.completeness"}}</label>{{#if tables.report.classicEvaluation.complete}}{{localize "pf2e-encounter-builder.evaluation.complete"}}{{else}}{{localize "pf2e-encounter-builder.evaluation.incomplete"}}{{/if}}</div>
+        </div>
+        <div class="peb-messages">{{#each tables.report.classicEvaluation.warnings}}<div class="peb-msg warn">{{this}}</div>{{/each}}</div>
+        {{/if}}
+        <div class="peb-toolbar">
+          <button type="button" data-action="ext" data-ext="tables" data-method="applyClassic" {{#unless tables.report.hasCreatures}}disabled{{/unless}}><i class="fa-solid fa-scroll"></i> {{localize "pf2e-encounter-builder.tables.applyClassic"}}</button>
+          <button type="button" data-action="ext" data-ext="tables" data-method="createVariant" {{#unless tables.report.hasCreatures}}disabled{{/unless}}><i class="fa-solid fa-scale-balanced"></i> {{localize "pf2e-encounter-builder.tables.createVariant"}}</button>
+          <button type="button" data-action="ext" data-ext="tables" data-method="applyTemplate" {{#unless tables.report.hasTemplates}}disabled{{/unless}}><i class="fa-solid fa-wand-magic-sparkles"></i> {{localize "pf2e-encounter-builder.tables.applyTemplate"}}</button>
+        </div>
+        {{#unless tables.report.hasTemplates}}<div class="peb-tags">{{localize "pf2e-encounter-builder.tables.notScalable"}}</div>{{/unless}}
+      {{else}}
+        <div class="peb-msg">{{localize "pf2e-encounter-builder.tables.empty"}}</div>
+      {{/if}}
+    </div>
+  </div>
+</section>

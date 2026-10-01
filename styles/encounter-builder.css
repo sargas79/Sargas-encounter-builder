@@ -1,0 +1,316 @@
+/* PF2e Encounter Builder — all selectors are namespaced under .pf2e-encounter-builder */
+
+.pf2e-encounter-builder {
+  --peb-gap: 0.5rem;
+  --peb-border: 1px solid var(--color-border-light-2, #999);
+  --peb-muted: var(--color-text-dark-secondary, #666);
+  --peb-warn: #a35d00;
+  --peb-error: #a00;
+  --peb-ok: #2a7;
+  min-width: 720px;
+}
+
+.pf2e-encounter-builder .window-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--peb-gap);
+  overflow: hidden;
+}
+
+.pf2e-encounter-builder .peb-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.25rem 1rem;
+  padding: 0.5rem;
+  border: var(--peb-border);
+  border-radius: 4px;
+  font-size: var(--font-size-13, 13px);
+}
+.pf2e-encounter-builder .peb-header .peb-stat label {
+  display: block;
+  font-size: var(--font-size-11, 11px);
+  color: var(--peb-muted);
+  text-transform: uppercase;
+}
+.pf2e-encounter-builder .peb-header .peb-stat .value {
+  font-weight: bold;
+}
+
+.pf2e-encounter-builder nav.tabs {
+  border-bottom: var(--peb-border);
+}
+
+.pf2e-encounter-builder section.tab {
+  flex: 1;
+  overflow: auto;
+  padding: 0.25rem;
+}
+.pf2e-encounter-builder section.tab:not(.active) {
+  display: none;
+}
+
+.pf2e-encounter-builder .peb-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--peb-gap);
+  height: 100%;
+}
+.pf2e-encounter-builder .peb-panel {
+  border: var(--peb-border);
+  border-radius: 4px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 0;
+}
+.pf2e-encounter-builder .peb-panel > h3 {
+  margin: 0;
+  border-bottom: var(--peb-border);
+  font-size: var(--font-size-14, 14px);
+}
+.pf2e-encounter-builder .peb-scroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 120px;
+}
+
+.pf2e-encounter-builder table.peb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-12, 12px);
+}
+.pf2e-encounter-builder table.peb-table th,
+.pf2e-encounter-builder table.peb-table td {
+  padding: 2px 4px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+.pf2e-encounter-builder table.peb-table td.num,
+.pf2e-encounter-builder table.peb-table th.num {
+  text-align: right;
+  white-space: nowrap;
+}
+.pf2e-encounter-builder table.peb-table img {
+  width: 24px;
+  height: 24px;
+  border: none;
+  vertical-align: middle;
+}
+.pf2e-encounter-builder table.peb-table input[type="number"] {
+  width: 3.5em;
+}
+.pf2e-encounter-builder table.peb-table .actions {
+  white-space: nowrap;
+}
+.pf2e-encounter-builder table.peb-table .actions button {
+  width: auto;
+  padding: 0 4px;
+  line-height: 1.4;
+  margin: 0;
+}
+.pf2e-encounter-builder tr.locked {
+  background: rgba(0, 120, 0, 0.08);
+}
+.pf2e-encounter-builder tr.inactive,
+.pf2e-encounter-builder tr.not-counted {
+  opacity: 0.6;
+}
+.pf2e-encounter-builder tr.missing {
+  background: rgba(170, 0, 0, 0.08);
+}
+.pf2e-encounter-builder .status-aboveRange,
+.pf2e-encounter-builder .status-belowRange {
+  color: var(--peb-warn);
+  font-style: italic;
+}
+
+.pf2e-encounter-builder .peb-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 0.5rem;
+  font-size: var(--font-size-12, 12px);
+}
+.pf2e-encounter-builder .peb-filters label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.pf2e-encounter-builder .peb-filters input,
+.pf2e-encounter-builder .peb-filters select {
+  flex: 1;
+  min-width: 0;
+}
+.pf2e-encounter-builder .peb-filters .span2 {
+  grid-column: span 2;
+}
+
+.pf2e-encounter-builder .peb-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-12, 12px);
+}
+.pf2e-encounter-builder .peb-msg {
+  padding: 2px 6px;
+  border-radius: 3px;
+  border-left: 3px solid var(--peb-muted);
+  background: rgba(0, 0, 0, 0.04);
+}
+.pf2e-encounter-builder .peb-msg.warn {
+  border-left-color: var(--peb-warn);
+}
+.pf2e-encounter-builder .peb-msg.error {
+  border-left-color: var(--peb-error);
+}
+.pf2e-encounter-builder .peb-msg.ok {
+  border-left-color: var(--peb-ok);
+}
+
+.pf2e-encounter-builder .peb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+.pf2e-encounter-builder .peb-toolbar button,
+.pf2e-encounter-builder .peb-toolbar select {
+  width: auto;
+}
+.pf2e-encounter-builder .peb-toolbar .spacer {
+  flex: 1;
+}
+
+.pf2e-encounter-builder .peb-evaluation {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.25rem;
+  font-size: var(--font-size-12, 12px);
+}
+.pf2e-encounter-builder .peb-evaluation .peb-stat label {
+  display: block;
+  color: var(--peb-muted);
+  font-size: var(--font-size-11, 11px);
+}
+
+.pf2e-encounter-builder .peb-dropzone {
+  border: 2px dashed var(--color-border-light-2, #999);
+  border-radius: 4px;
+  padding: 0.5rem;
+  text-align: center;
+  color: var(--peb-muted);
+  font-size: var(--font-size-12, 12px);
+}
+.pf2e-encounter-builder .peb-dropzone.dragover {
+  border-color: var(--peb-ok);
+}
+
+.pf2e-encounter-builder .peb-trace {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-11, 11px);
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 0.25rem;
+}
+
+.pf2e-encounter-builder .peb-packs label {
+  display: block;
+  font-size: var(--font-size-12, 12px);
+}
+
+.pf2e-encounter-builder .peb-tags {
+  font-size: var(--font-size-11, 11px);
+  color: var(--peb-muted);
+}
+
+.pf2e-encounter-builder button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pf2e-encounter-builder-launch {
+  flex: 0 0 auto;
+}
+
+/* Table editor */
+.pf2e-encounter-table-editor {
+  min-width: 760px;
+}
+.pf2e-encounter-table-editor .window-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: auto;
+}
+.pf2e-encounter-table-editor .peb-row {
+  border: 1px solid var(--color-border-light-2, #999);
+  border-radius: 4px;
+  padding: 0.35rem;
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  gap: 0.25rem 0.5rem;
+  align-items: start;
+  font-size: var(--font-size-12, 12px);
+}
+.pf2e-encounter-table-editor .peb-row.invalid {
+  border-color: #a00;
+}
+.pf2e-encounter-table-editor .peb-row.readonly {
+  opacity: 0.75;
+}
+.pf2e-encounter-table-editor .peb-row .peb-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.pf2e-encounter-table-editor .peb-row .peb-row-main input[type="text"],
+.pf2e-encounter-table-editor .peb-row .peb-row-main select,
+.pf2e-encounter-table-editor .peb-row .peb-row-main textarea {
+  width: 100%;
+}
+.pf2e-encounter-table-editor .peb-row .peb-inline {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pf2e-encounter-table-editor .peb-row .peb-inline input[type="number"] {
+  width: 4em;
+}
+.pf2e-encounter-table-editor .peb-row .peb-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pf2e-encounter-table-editor .peb-row .peb-row-actions button {
+  width: auto;
+  padding: 0 6px;
+  line-height: 1.5;
+}
+.pf2e-encounter-table-editor .peb-creature-line {
+  display: grid;
+  grid-template-columns: 1fr 6em auto;
+  gap: 0.25rem;
+}
+.pf2e-encounter-table-editor .peb-validation {
+  color: #a00;
+  font-size: var(--font-size-11, 11px);
+}
+.pf2e-encounter-table-editor .peb-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.25rem 0.75rem;
+  font-size: var(--font-size-12, 12px);
+}
+.pf2e-encounter-table-editor .peb-settings label {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.pf2e-encounter-table-editor .peb-settings input,
+.pf2e-encounter-table-editor .peb-settings select {
+  flex: 1;
+}

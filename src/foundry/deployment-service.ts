@@ -1,0 +1,373 @@
+/**
+ * DeploymentService: explicit imports, token placement and optional combat creation,
+ * with an operation ledger for exact partial-failure reporting and safe cleanup.
+ *
+ * Guarantees:
+ *  - compendium documents are never modified
+ *  - reuse matches on compendium source identity, never on name
+ *  - deployed NPC tokens are always unlinked (independent HP/conditions)
+ *  - combat is never started, initiative never rolled, tokens hidden by default
+ *  - one in-flight operation at a time
+ */
+import { FLAGS, MODULE_ID, SETTINGS } from "../constants.js";
+import {
+  OperationLedger,
+  planDeployment,
+  type DeploymentOptions,
+  type DeploymentPlan,
+} from "../core/deployment.js";
+import type { DraftEntry } from "../core/draft.js";
+import { footprintCells, placeTokens, tokenNames, type PlacementRequest } from "../core/placement.js";
+import { documentClass, gridTypes, isGM, randomID } from "./compat.js";
+import { getSetting } from "./settings.js";
+
+/** Port over Foundry so the service can be tested with a mock. */
+export interface DeploymentGateway {
+  getScene(sceneId: string): SceneDocument | null;
+  findReusableActor(sourceUuid: string): ActorDocument | null;
+  importActor(sourceUuid: string): Promise<ActorDocument>;
+  getActor(uuid: string): Promise<ActorDocument | null>;
+  createTokens(scene: SceneDocument, data: Record<string, unknown>[]): Promise<TokenDocument[]>;
+  activeCombat(sceneId: string): CombatDocument | null;
+  createCombat(sceneId: string): Promise<CombatDocument>;
+  addCombatants(
+    combat: CombatDocument,
+    tokens: TokenDocument[],
+  ): Promise<{ id: string; uuid: string; name: string }[]>;
+  deleteDocument(kind: "Actor" | "Token" | "Combat" | "Combatant", uuid: string): Promise<void>;
+}
+
+export interface DeploymentPreview {
+  plan: DeploymentPlan;
+  scene: { id: string; name: string; gridLabel: string; supported: boolean } | null;
+  warnings: string[];
+  blockers: string[];
+}
+
+export interface DeploymentOutcome {
+  ledger: OperationLedger;
+  placedTokens: TokenDocument[];
+  unplaced: number;
+}
+
+export class DeploymentService {
+  #inFlight: Promise<DeploymentOutcome> | null = null;
+  #lastLedger: OperationLedger | null = null;
+
+  constructor(private readonly gateway: DeploymentGateway) {}
+
+  get busy(): boolean {
+    return this.#inFlight !== null;
+  }
+
+  get lastLedger(): OperationLedger | null {
+    return this.#lastLedger;
+  }
+
+  preview(entries: DraftEntry[], options: DeploymentOptions): DeploymentPreview {
+    const plan = planDeployment(
+      entries,
+      options,
+      (uuid) => this.gateway.findReusableActor(uuid)?.uuid ?? null,
+    );
+    const warnings: string[] = [];
+    const blockers: string[] = [];
+    const sceneDoc = options.sceneId ? this.gateway.getScene(options.sceneId) : null;
+    let scene: DeploymentPreview["scene"] = null;
+    if (!sceneDoc) blockers.push("noScene");
+    else {
+      const types = gridTypes();
+      const type = sceneDoc.grid.type;
+      const supported = type === types.SQUARE;
+      const gridLabel = type === types.GRIDLESS ? "gridless" : supported ? "square" : "hex";
+      if (!supported) warnings.push("unsupportedGrid");
+      scene = { id: sceneDoc.id, name: sceneDoc.name, gridLabel, supported };
+    }
+    if (plan.totalTokens === 0) blockers.push("nothingToDeploy");
+    for (const actor of plan.actors) {
+      if (!actor.sourceUuid.startsWith("Compendium.") && !actor.sourceUuid.startsWith("Actor."))
+        warnings.push("unknownSource");
+    }
+    if (options.importPolicy === "reuse" && plan.actors.some((a) => !a.reuseActorUuid))
+      warnings.push("someFresh");
+    return { plan, scene, warnings, blockers };
+  }
+
+  /** Execute a deployment. Rejects while another deployment is in flight. */
+  deploy(
+    entries: DraftEntry[],
+    options: DeploymentOptions,
+    origin: { x: number; y: number } | null,
+  ): Promise<DeploymentOutcome> {
+    if (!isGM()) return Promise.reject(new Error("GM only"));
+    if (this.#inFlight) return Promise.reject(new Error("deployment already in progress"));
+    this.#inFlight = this.#execute(entries, options, origin).finally(() => {
+      this.#inFlight = null;
+    });
+    return this.#inFlight;
+  }
+
+  async #execute(
+    entries: DraftEntry[],
+    options: DeploymentOptions,
+    origin: { x: number; y: number } | null,
+  ): Promise<DeploymentOutcome> {
+    const ledger = new OperationLedger(randomID());
+    this.#lastLedger = ledger;
+    const preview = this.preview(entries, options);
+    if (preview.blockers.length > 0) {
+      ledger.fail({ stage: "place", subject: "preflight", message: preview.blockers.join(", ") });
+      ledger.finish();
+      return { ledger, placedTokens: [], unplaced: preview.plan.totalTokens };
+    }
+    const scene = this.gateway.getScene(options.sceneId)!;
+
+    // 1. Resolve actors (import or reuse).
+    const resolvedActors: { actor: ActorDocument; quantity: number; name: string }[] = [];
+    for (const planned of preview.plan.actors) {
+      try {
+        let actor: ActorDocument | null = null;
+        if (planned.reuseActorUuid) {
+          actor = await this.gateway.getActor(planned.reuseActorUuid);
+          if (actor) ledger.reuse({ kind: "Actor", uuid: actor.uuid, name: actor.name });
+        }
+        if (!actor && planned.sourceUuid.startsWith("Actor.")) {
+          actor = await this.gateway.getActor(planned.sourceUuid);
+          if (actor) ledger.reuse({ kind: "Actor", uuid: actor.uuid, name: actor.name });
+        }
+        if (!actor) {
+          actor = await this.gateway.importActor(planned.sourceUuid);
+          ledger.record({ kind: "Actor", id: actor.id, uuid: actor.uuid, name: actor.name });
+        }
+        resolvedActors.push({ actor, quantity: planned.quantity, name: planned.name });
+      } catch (error) {
+        ledger.fail({
+          stage: "import",
+          subject: planned.name,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // 2. Place tokens.
+    const placedTokens: TokenDocument[] = [];
+    let unplaced = 0;
+    if (resolvedActors.length > 0) {
+      const grid = scene.grid;
+      const types = gridTypes();
+      const square = grid.type === types.SQUARE;
+      const cell = grid.size;
+      const dims = scene.dimensions;
+      const bounds = {
+        minI: Math.floor(dims.sceneY / cell),
+        minJ: Math.floor(dims.sceneX / cell),
+        maxI: Math.ceil((dims.sceneY + dims.sceneHeight) / cell),
+        maxJ: Math.ceil((dims.sceneX + dims.sceneWidth) / cell),
+      };
+      const originPoint = origin ?? {
+        x: dims.sceneX + dims.sceneWidth / 2,
+        y: dims.sceneY + dims.sceneHeight / 2,
+      };
+      const originCell = { i: Math.floor(originPoint.y / cell), j: Math.floor(originPoint.x / cell) };
+      const occupied = scene.tokens.contents.flatMap((tk) =>
+        footprintCells(Math.floor(tk.y / cell), Math.floor(tk.x / cell), tk.width, tk.height),
+      );
+
+      const requests: PlacementRequest[] = [];
+      const byId = new Map<string, { actor: ActorDocument; name: string }>();
+      const existingNames = scene.tokens.contents.map((tk) => tk.name);
+      for (const { actor, quantity } of resolvedActors) {
+        const names = tokenNames(
+          actor.prototypeToken?.name || actor.name,
+          quantity,
+          options.numberDuplicates,
+          existingNames,
+        );
+        for (let k = 0; k < quantity; k++) {
+          const id = `${actor.id}:${k}`;
+          requests.push({
+            id,
+            width: actor.prototypeToken?.width ?? 1,
+            height: actor.prototypeToken?.height ?? 1,
+          });
+          byId.set(id, { actor, name: names[k]! });
+        }
+      }
+      const placement = placeTokens(requests, originCell, bounds, occupied);
+      unplaced = placement.unplaced.length;
+      if (unplaced > 0) {
+        ledger.fail({
+          stage: "place",
+          subject: "placement",
+          message: `${unplaced} token(s) do not fit on the scene near the origin`,
+        });
+      } else {
+        const data = placement.placed.map((p) => {
+          const { actor, name } = byId.get(p.id)!;
+          const proto = actor.prototypeToken?.toObject?.() ?? {};
+          return {
+            ...proto,
+            name,
+            actorId: actor.id,
+            actorLink: false,
+            hidden: options.hidden,
+            x: square ? p.j * cell : p.j * cell,
+            y: square ? p.i * cell : p.i * cell,
+            flags: { ...(proto.flags ?? {}), [MODULE_ID]: { [FLAGS.deployment]: ledger.id } },
+          };
+        });
+        try {
+          const tokens = await this.gateway.createTokens(scene, data);
+          for (const tk of tokens) {
+            ledger.record({ kind: "Token", id: tk.id, uuid: tk.uuid, name: tk.name });
+            placedTokens.push(tk);
+          }
+        } catch (error) {
+          ledger.fail({
+            stage: "place",
+            subject: "tokens",
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    }
+
+    // 3. Optional combat.
+    if (options.addToCombat !== "none" && placedTokens.length > 0) {
+      try {
+        let combat = options.addToCombat === "active" ? this.gateway.activeCombat(scene.id) : null;
+        if (!combat) {
+          combat = await this.gateway.createCombat(scene.id);
+          ledger.record({ kind: "Combat", id: combat.id, uuid: combat.uuid, name: combat.name ?? "Combat" });
+        } else {
+          ledger.reuse({ kind: "Combat", uuid: combat.uuid, name: combat.name ?? "Combat" });
+        }
+        const combatants = await this.gateway.addCombatants(combat, placedTokens);
+        for (const c of combatants)
+          ledger.record({ kind: "Combatant", id: c.id, uuid: c.uuid, name: c.name });
+      } catch (error) {
+        ledger.fail({
+          stage: "combat",
+          subject: "combat",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    ledger.finish();
+    Hooks.callAll(`${MODULE_ID}.deploymentComplete`, ledger.summary());
+    return { ledger, placedTokens, unplaced };
+  }
+
+  /** Delete only what the given operation created. Returns what was removed and what failed. */
+  async cleanup(
+    ledger: OperationLedger,
+  ): Promise<{ removed: number; failed: { uuid: string; message: string }[] }> {
+    if (!isGM()) throw new Error("GM only");
+    let removed = 0;
+    const failed: { uuid: string; message: string }[] = [];
+    for (const target of ledger.cleanupTargets()) {
+      try {
+        await this.gateway.deleteDocument(target.kind, target.uuid);
+        removed++;
+      } catch (error) {
+        failed.push({ uuid: target.uuid, message: error instanceof Error ? error.message : String(error) });
+      }
+    }
+    return { removed, failed };
+  }
+}
+
+/* -------------------------------------------- */
+/*  Foundry gateway                             */
+/* -------------------------------------------- */
+
+export class FoundryDeploymentGateway implements DeploymentGateway {
+  getScene(sceneId: string): SceneDocument | null {
+    return game.scenes.get(sceneId) ?? null;
+  }
+
+  findReusableActor(sourceUuid: string): ActorDocument | null {
+    if (sourceUuid.startsWith("Actor.")) return game.actors.get(sourceUuid.slice("Actor.".length)) ?? null;
+    // Match on compendium source identity only (never name). Prefer the oldest match for stability.
+    const matches = game.actors.filter(
+      (a) => a.type === "npc" && (a._stats?.compendiumSource ?? null) === sourceUuid,
+    );
+    return matches[0] ?? null;
+  }
+
+  async importActor(sourceUuid: string): Promise<ActorDocument> {
+    const source = (await fromUuid(sourceUuid)) as ActorDocument | null;
+    if (!source) throw new Error(`source ${sourceUuid} not found`);
+    if (source.type !== "npc") throw new Error(`source ${sourceUuid} is not an NPC`);
+    const data = source.toObject();
+    delete data._id;
+    delete data.folder;
+    data.ownership = { default: 0 };
+    data._stats = { ...(data._stats ?? {}), compendiumSource: sourceUuid };
+    data.flags = {
+      ...(data.flags ?? {}),
+      [MODULE_ID]: { [FLAGS.importedFrom]: { uuid: sourceUuid, at: Date.now() } },
+    };
+    // Actor.create with a compendium source; Foundry also records _stats.compendiumSource for compendium imports.
+    const ActorClass = documentClass("Actor");
+    const created: ActorDocument = await ActorClass.create(data, {
+      fromCompendium: sourceUuid.startsWith("Compendium."),
+    });
+    if (!created) throw new Error(`failed to import ${sourceUuid}`);
+    return created;
+  }
+
+  async getActor(uuid: string): Promise<ActorDocument | null> {
+    const doc = (await fromUuid(uuid)) as ActorDocument | null;
+    return doc && doc.documentName === "Actor" ? doc : null;
+  }
+
+  async createTokens(scene: SceneDocument, data: Record<string, unknown>[]): Promise<TokenDocument[]> {
+    return scene.createEmbeddedDocuments("Token", data) as Promise<TokenDocument[]>;
+  }
+
+  activeCombat(sceneId: string): CombatDocument | null {
+    const combat = game.combats.active ?? game.combat;
+    if (!combat) return null;
+    return !combat.scene || combat.scene.id === sceneId ? combat : null;
+  }
+
+  async createCombat(sceneId: string): Promise<CombatDocument> {
+    // Never started here; the GM starts it from the tracker.
+    return documentClass("Combat").create({ scene: sceneId, active: true });
+  }
+
+  async addCombatants(
+    combat: CombatDocument,
+    tokens: TokenDocument[],
+  ): Promise<{ id: string; uuid: string; name: string }[]> {
+    const data = tokens.map((tk) => ({
+      tokenId: tk.id,
+      sceneId: tk.parent?.id ?? combat.scene?.id,
+      actorId: tk.actorId,
+      hidden: tk.hidden,
+    }));
+    const created = await combat.createEmbeddedDocuments("Combatant", data);
+    return created.map((c: { id: string; uuid: string; name: string }) => ({
+      id: c.id,
+      uuid: c.uuid,
+      name: c.name,
+    }));
+  }
+
+  async deleteDocument(_kind: "Actor" | "Token" | "Combat" | "Combatant", uuid: string): Promise<void> {
+    const doc = await fromUuid(uuid);
+    if (doc) await doc.delete();
+  }
+}
+
+export function defaultDeploymentOptions(): DeploymentOptions {
+  return {
+    sceneId: game.scenes.viewed?.id ?? game.scenes.active?.id ?? "",
+    importPolicy: "reuse",
+    hidden: true,
+    addToCombat: "none",
+    numberDuplicates: !!getSetting<boolean>(SETTINGS.numberDuplicateTokens),
+  };
+}

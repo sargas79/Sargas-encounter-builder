@@ -1,0 +1,11 @@
+<div class="peb-evaluation">
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.party"}}</label>{{snap.partyName}} ({{snap.partySize}})</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.levels"}}</label>{{snap.levels}}</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.reference"}}</label>{{snap.referenceLevel}}</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.selected"}}</label>{{snap.threatLabel}}</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.target"}}</label>{{#if (ne snap.target null)}}{{snap.target}} XP{{else}}—{{/if}}</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.supported"}}</label>{{snap.supportedXP}} XP</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.difference"}}</label>{{snap.differenceLabel}}</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.evaluation.inferred"}}</label>{{snap.inferredLabel}} ({{snap.completeLabel}})</div>
+  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.saved.when"}}</label>{{snap.when}}</div>
+</div>

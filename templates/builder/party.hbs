@@ -1,0 +1,80 @@
+<section class="tab {{#if (eq activeTab "party")}}active{{/if}}" data-tab="party" data-group="primary">
+  <div class="peb-columns">
+    <div class="peb-panel">
+      <h3>{{localize "pf2e-encounter-builder.party.profiles"}}</h3>
+      <div class="peb-toolbar">
+        <select name="activeProfile">
+          {{#unless party.profiles.length}}<option value="">{{localize "pf2e-encounter-builder.party.none"}}</option>{{/unless}}
+          {{#each party.profiles}}<option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}} ({{localize (concat "pf2e-encounter-builder.party.kind." this.kind)}})</option>{{/each}}
+        </select>
+        <button type="button" data-action="createProfile"><i class="fa-solid fa-plus"></i> {{localize "pf2e-encounter-builder.party.create"}}</button>
+        <button type="button" data-action="renameProfile" {{#unless party.profile}}disabled{{/unless}}><i class="fa-solid fa-pen"></i></button>
+        <button type="button" data-action="deleteProfile" {{#unless party.profile}}disabled{{/unless}}><i class="fa-solid fa-trash"></i></button>
+        <button type="button" data-action="refreshParty" title="{{localize "pf2e-encounter-builder.party.refresh"}}"><i class="fa-solid fa-rotate"></i></button>
+      </div>
+      <div class="peb-toolbar">
+        <select name="partyActorUuid">
+          {{#unless party.partyActors.length}}<option value="">{{localize "pf2e-encounter-builder.party.noPartyActors"}}</option>{{/unless}}
+          {{#each party.partyActors}}<option value="{{this.uuid}}">{{this.name}}</option>{{/each}}
+        </select>
+        <button type="button" data-action="linkPartyActor" {{#unless party.partyActors.length}}disabled{{/unless}}><i class="fa-solid fa-link"></i> {{localize "pf2e-encounter-builder.party.link"}}</button>
+      </div>
+      {{#if party.profile}}
+      <div class="peb-filters">
+        <label>{{localize "pf2e-encounter-builder.party.threatLabel"}}
+          <select name="threat">{{#each party.threatOptions}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}} {{#if this.disabled}}disabled{{/if}}>{{this.label}}</option>{{/each}}</select>
+        </label>
+        {{#if party.showPolicy}}
+        <label>{{localize "pf2e-encounter-builder.party.policyLabel"}}
+          <select name="referencePolicy">
+            <option value="">{{localize "pf2e-encounter-builder.party.policy.choose"}}</option>
+            {{#each party.policies}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}
+          </select>
+        </label>
+        {{#if party.isManual}}
+        <label>{{localize "pf2e-encounter-builder.party.manualLevel"}} <input type="number" name="manualReferenceLevel" min="1" max="20" value="{{party.manualLevel}}"></label>
+        {{/if}}
+        {{/if}}
+      </div>
+      {{#each party.blockers}}<div class="peb-msg error">{{this}}</div>{{/each}}
+      {{/if}}
+    </div>
+    <div class="peb-panel">
+      <h3>{{localize "pf2e-encounter-builder.party.roster"}} {{#if party.roster}}({{party.roster.partySize}} {{localize "pf2e-encounter-builder.party.counted"}}){{/if}}</h3>
+      {{#if party.profile}}
+      {{#unless party.isLinked}}
+      <div class="peb-toolbar">
+        <button type="button" data-action="pickMember"><i class="fa-solid fa-user-plus"></i> {{localize "pf2e-encounter-builder.party.pick"}}</button>
+      </div>
+      <div class="peb-dropzone" data-purpose="party">{{localize "pf2e-encounter-builder.party.dropHint"}}</div>
+      {{else}}
+      <div class="peb-msg">{{localize "pf2e-encounter-builder.party.linkedHint"}}</div>
+      {{/unless}}
+      <div class="peb-scroll">
+        <table class="peb-table">
+          <thead><tr><th>{{localize "pf2e-encounter-builder.party.name"}}</th><th>{{localize "pf2e-encounter-builder.party.type"}}</th><th class="num">{{localize "pf2e-encounter-builder.party.level"}}</th><th>{{localize "pf2e-encounter-builder.party.statusHeader"}}</th><th></th></tr></thead>
+          <tbody>
+          {{#each party.roster.members}}
+          <tr class="{{this.cssClass}}" data-uuid="{{this.uuid}}">
+            <td>{{this.name}}</td>
+            <td>{{this.type}}</td>
+            <td class="num">{{this.level}}</td>
+            <td>{{this.statusLabel}}</td>
+            <td class="actions">
+              <button type="button" data-action="toggleMember" title="{{localize "pf2e-encounter-builder.party.toggle"}}"><i class="fa-solid {{#if this.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i></button>
+              {{#if this.canToggleCounts}}<button type="button" data-action="toggleCounts" title="{{localize "pf2e-encounter-builder.party.toggleCounts"}}"><i class="fa-solid {{#if this.countsAsMember}}fa-user-check{{else}}fa-user-slash{{/if}}"></i></button>{{/if}}
+              {{#unless ../party.isLinked}}<button type="button" data-action="removeMember" title="{{localize "pf2e-encounter-builder.party.remove"}}"><i class="fa-solid fa-xmark"></i></button>{{/unless}}
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="5">{{localize "pf2e-encounter-builder.party.empty"}}</td></tr>
+          {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="peb-msg">{{localize "pf2e-encounter-builder.party.noProfile"}}</div>
+      {{/if}}
+    </div>
+  </div>
+</section>

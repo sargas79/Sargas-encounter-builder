@@ -1,0 +1,100 @@
+<div class="peb-settings">
+  <label class="span2"><strong>{{name}}</strong></label>
+  <label>{{localize "pf2e-encounter-builder.editor.formula"}} <input type="text" name="table.formula" value="{{formula}}"> <span class="peb-tags">{{formulaRange}}</span></label>
+  <label>{{localize "pf2e-encounter-builder.editor.mode"}}
+    <select name="table.mode">
+      <option value="range" {{#unless isWeight}}selected{{/unless}}>{{localize "pf2e-encounter-builder.editor.modeRange"}}</option>
+      <option value="weight" {{#if isWeight}}selected{{/if}}>{{localize "pf2e-encounter-builder.editor.modeWeight"}}</option>
+    </select>
+    {{#if isWeight}}<button type="button" data-action="deriveRanges" title="{{localize "pf2e-encounter-builder.editor.deriveHint"}}">{{localize "pf2e-encounter-builder.editor.derive"}}</button>{{/if}}
+  </label>
+  <label>{{localize "pf2e-encounter-builder.editor.checkFormula"}} <input type="text" name="table.checkFormula" value="{{encounterCheck.formula}}" placeholder="1d6"></label>
+  <label>{{localize "pf2e-encounter-builder.editor.checkOccursOn"}} <input type="text" name="table.checkOccursOn" value="{{occursOn}}" placeholder="1"></label>
+  <label>{{localize "pf2e-encounter-builder.editor.tagRegion"}} <input type="text" name="table.tag.region" value="{{tags.region}}"></label>
+  <label>{{localize "pf2e-encounter-builder.editor.tagTerrain"}} <input type="text" name="table.tag.terrain" value="{{tags.terrain}}"></label>
+  <label>{{localize "pf2e-encounter-builder.editor.tagSeason"}} <input type="text" name="table.tag.season" value="{{tags.season}}"></label>
+  <label>{{localize "pf2e-encounter-builder.editor.tagTime"}} <input type="text" name="table.tag.timeOfDay" value="{{tags.timeOfDay}}"></label>
+  <label class="span2">{{localize "pf2e-encounter-builder.editor.notes"}} <input type="text" name="table.notes" value="{{flags.notes}}"></label>
+</div>
+{{#unless replacement}}<div class="peb-msg warn">{{localize "pf2e-encounter-builder.editor.noReplacement"}}</div>{{/unless}}
+{{#each tableIssues}}<div class="peb-msg {{#if (eq this.level "error")}}error{{else}}warn{{/if}}">{{this.text}}</div>{{/each}}
+<div class="peb-toolbar">
+  <button type="button" data-action="addRow"><i class="fa-solid fa-plus"></i> {{localize "pf2e-encounter-builder.editor.addRow"}}</button>
+  <button type="button" data-action="validate"><i class="fa-solid fa-check"></i> {{localize "pf2e-encounter-builder.editor.validate"}}</button>
+  <span class="spacer"></span>
+  <button type="button" data-action="save" {{#unless dirty}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk"></i> {{localize "pf2e-encounter-builder.editor.save"}}</button>
+</div>
+<div class="peb-tags">{{localize "pf2e-encounter-builder.editor.dropHint"}}</div>
+<div class="peb-rows">
+{{#each rows}}
+<div class="peb-row {{#if this.invalid}}invalid{{/if}} {{#if this.isNative}}readonly{{/if}}" data-index="{{this.index}}">
+  <div class="peb-inline">
+    {{#if ../isWeight}}
+    <input type="number" name="row.{{this.index}}.weight" value="{{this.weight}}" min="0" title="{{localize "pf2e-encounter-builder.editor.weight"}}" {{#if this.isNative}}disabled{{/if}}>
+    <span class="peb-tags">{{this.range.[0]}}–{{this.range.[1]}}</span>
+    {{else}}
+    <input type="number" name="row.{{this.index}}.lo" value="{{this.range.[0]}}" {{#if this.isNative}}disabled{{/if}}>–<input type="number" name="row.{{this.index}}.hi" value="{{this.range.[1]}}" {{#if this.isNative}}disabled{{/if}}>
+    {{/if}}
+  </div>
+  <div class="peb-row-main">
+    {{#if this.isNative}}
+      <div>{{localize "pf2e-encounter-builder.editor.nativeRow"}}: {{#if this.documentUuid}}@{{this.documentUuid}}{{else}}{{this.text}}{{/if}}</div>
+      <button type="button" data-action="configureRow">{{localize "pf2e-encounter-builder.editor.configure"}}</button>
+    {{else}}
+      <div class="peb-inline">
+        <select name="row.{{this.index}}.kind">{{#each this.kinds}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>
+        {{#if this.isNarrative}}<select name="row.{{this.index}}.narrativeKind">{{#each this.narrativeKinds}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}</select>{{/if}}
+      </div>
+      <input type="text" name="row.{{this.index}}.text" value="{{this.text}}" placeholder="{{localize "pf2e-encounter-builder.editor.textPlaceholder"}}">
+      {{#if this.isCreatures}}
+        {{#each this.creatures}}
+        <div class="peb-creature-line">
+          <input type="text" name="row.{{../index}}.creature.{{this.ci}}.uuid" value="{{this.uuid}}" placeholder="Compendium.… or Actor.…" title="{{this.name}}">
+          <input type="text" name="row.{{../index}}.creature.{{this.ci}}.quantity" value="{{this.quantity}}" placeholder="1d4+1" class="{{#unless this.quantityValid}}invalid{{/unless}}">
+          <button type="button" data-action="removeCreature" data-ci="{{this.ci}}"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="peb-tags">{{this.name}}</div>
+        {{/each}}
+        <button type="button" data-action="addCreature"><i class="fa-solid fa-plus"></i> {{localize "pf2e-encounter-builder.editor.addCreature"}}</button>
+      {{/if}}
+      {{#if this.isTable}}
+        <input type="text" name="row.{{this.index}}.tableUuid" value="{{this.flags.tableUuid}}" placeholder="RollTable.…"> <span class="peb-tags">{{this.tableName}}</span>
+      {{/if}}
+      {{#if this.isTemplate}}
+        <input type="text" name="row.{{this.index}}.template.candidates" value="{{this.templateCandidates}}" placeholder="{{localize "pf2e-encounter-builder.editor.templateCandidates"}}">
+        <input type="text" name="row.{{this.index}}.template.traits" value="{{this.templateTraits}}" placeholder="{{localize "pf2e-encounter-builder.editor.templateTraits"}}">
+        <div class="peb-inline">
+          <label>{{localize "pf2e-encounter-builder.generator.relativeMin"}} <input type="number" name="row.{{this.index}}.template.levelMin" value="{{this.template.levelMin}}"></label>
+          <label>{{localize "pf2e-encounter-builder.generator.relativeMax"}} <input type="number" name="row.{{this.index}}.template.levelMax" value="{{this.template.levelMax}}"></label>
+          <select name="row.{{this.index}}.template.composition">
+            <option value="unrestricted" {{#if (eq this.template.composition "unrestricted")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.unrestricted"}}</option>
+            <option value="solo" {{#if (eq this.template.composition "solo")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.solo"}}</option>
+            <option value="pair" {{#if (eq this.template.composition "pair")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.pair"}}</option>
+            <option value="group" {{#if (eq this.template.composition "group")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.group"}}</option>
+            <option value="bossWithSupport" {{#if (eq this.template.composition "bossWithSupport")}}selected{{/if}}>{{localize "pf2e-encounter-builder.generator.composition.bossWithSupport"}}</option>
+          </select>
+          <select name="row.{{this.index}}.template.threat">
+            <option value="" {{#unless this.template.threat}}selected{{/unless}}>{{localize "pf2e-encounter-builder.editor.templateThreatParty"}}</option>
+            <option value="trivial" {{#if (eq this.template.threat "trivial")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.trivial"}}</option>
+            <option value="low" {{#if (eq this.template.threat "low")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.low"}}</option>
+            <option value="moderate" {{#if (eq this.template.threat "moderate")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.moderate"}}</option>
+            <option value="severe" {{#if (eq this.template.threat "severe")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.severe"}}</option>
+            <option value="extreme" {{#if (eq this.template.threat "extreme")}}selected{{/if}}>{{localize "pf2e-encounter-builder.threat.extreme"}}</option>
+          </select>
+        </div>
+      {{/if}}
+      <input type="text" name="row.{{this.index}}.notes" value="{{this.flags.notes}}" placeholder="{{localize "pf2e-encounter-builder.editor.rowNotes"}}">
+      <input type="text" name="row.{{this.index}}.journalUuid" value="{{this.flags.journalUuid}}" placeholder="{{localize "pf2e-encounter-builder.editor.journal"}}">
+    {{/if}}
+    {{#each this.issues}}<div class="peb-validation">{{this.text}}</div>{{/each}}
+  </div>
+  <div class="peb-row-actions">
+    <button type="button" data-action="moveUp" title="{{localize "pf2e-encounter-builder.editor.moveUp"}}"><i class="fa-solid fa-arrow-up"></i></button>
+    <button type="button" data-action="moveDown" title="{{localize "pf2e-encounter-builder.editor.moveDown"}}"><i class="fa-solid fa-arrow-down"></i></button>
+    <button type="button" data-action="removeRow" title="{{localize "pf2e-encounter-builder.editor.removeRow"}}"><i class="fa-solid fa-trash"></i></button>
+  </div>
+</div>
+{{else}}
+<div class="peb-msg">{{localize "pf2e-encounter-builder.editor.noRows"}}</div>
+{{/each}}
+</div>
