@@ -19,6 +19,7 @@ import {
 import { t } from "../foundry/i18n.js";
 import { services } from "../foundry/services.js";
 import type { EncounterBuilderApp } from "./encounter-builder-app.js";
+import type { TreasurePanel } from "./treasure-panel.js";
 import { promptText } from "./encounter-builder-app.js";
 
 export class SavedPanel {
@@ -102,6 +103,8 @@ export class SavedPanel {
       this.app.state.evaluation,
     );
     const recipe = recipeFromDraft(name, this.app.state.draft, snapshot);
+    const treasure = this.#treasure().toRecord();
+    if (treasure) recipe.treasure = treasure;
     const record = await this.repository.save(recipe);
     this.selectedId = record.id;
     this.app.pushMessage("ok", t("saved.savedMessage", { name: recipe.name }));
@@ -136,10 +139,15 @@ export class SavedPanel {
     this.missing = missing;
     this.selectedId = record.id;
     this.app.setDraft(draft);
+    await this.#treasure().fromRecord(record.recipe.treasure);
     if (missing.length) this.app.pushMessage("warn", t("saved.missingSources", { count: missing.length }));
     else this.app.pushMessage("ok", t("saved.opened", { name: record.recipe.name }));
     this.app.activeTab = "build";
-    await this.app.render({ parts: ["header", "tabs", "build", "saved", "deploy"] });
+    await this.app.render({ parts: ["header", "tabs", "build", "saved", "deploy", "treasure"] });
+  }
+
+  #treasure(): TreasurePanel {
+    return this.app.extensions.treasure as TreasurePanel;
   }
 
   /** Show a fresh evaluation beside the saved one; never overwrites. */
@@ -192,6 +200,8 @@ export class SavedPanel {
     );
     const fresh = recipeFromDraft(record.recipe.name, this.app.state.draft, snapshot, record.recipe.notes);
     const updated: Recipe = { ...fresh, createdAt: record.recipe.createdAt };
+    const treasure = this.#treasure().toRecord();
+    if (treasure) updated.treasure = treasure;
     await this.repository.update(record.id, updated);
     this.app.pushMessage("ok", t("saved.savedMessage", { name: record.recipe.name }));
     await this.app.render({ parts: ["header", "saved"] });

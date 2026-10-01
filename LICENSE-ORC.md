@@ -22,9 +22,12 @@ This product is based on the following Licensed Material:
 
 ## Scope of Licensed Material in this repository
 
-The only Licensed Material reproduced in this repository is the set of encounter-building game mechanics in
-`src/rules/encounter-tables.ts`: the encounter XP budgets by threat level, the per-character budget
-adjustment, and the creature XP values by level relative to the party.
+The only Licensed Material reproduced in this repository is the set of game mechanics in `src/rules/`:
+
+- `encounter-tables.ts`: the encounter XP budgets by threat level, the per-character budget adjustment,
+  and the creature XP values by level relative to the party.
+- `treasure-tables.ts`: the party treasure by level (total value, permanent and consumable item slots by
+  item level, party currency, and currency per additional PC).
 
 If you use or adapt the Licensed Material in this repository, you must include this ORC Notice (or the
 equivalent notice from the license) and the attribution above.

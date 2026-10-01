@@ -24,7 +24,9 @@ export function RollClass(): {
   return g.foundry?.dice?.Roll ?? g.Roll;
 }
 
-export function documentClass(name: "Actor" | "JournalEntry" | "RollTable" | "Folder" | "Combat"): any {
+export function documentClass(
+  name: "Actor" | "JournalEntry" | "RollTable" | "Folder" | "Combat" | "ChatMessage" | "Item",
+): any {
   return g.CONFIG?.[name]?.documentClass ?? g[name];
 }
 

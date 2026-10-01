@@ -23,6 +23,9 @@ one explicit action.
 - **Classic encounter tables** on native RollTables: dice ranges or weights, creature groups with dice
   quantities, narrative results, nested tables with cycle protection, encounter checks, a full resolution
   trace, and policies that never scale a classic result silently.
+- **Treasure** from GM Core Table 10-9: the party's budget for the encounter (its XP share of a level), a
+  whole level, or any share; rolled from the equipment compendium into a Loot actor, an actor you point at,
+  or a GM chat card.
 - **Saved encounters** as GM-private journal entries with an evaluation snapshot that is never overwritten
   silently.
 - **Deployment** that reuses world actors by compendium source, places unlinked hidden tokens on a spiral,
@@ -106,6 +109,20 @@ threat: the lowest tier whose budget covers the total, _Beyond Extreme_ above it
 any creature is more than 4 levels above the party. Creatures outside −4..+4 are not counted or clamped;
 the meter says _incomplete_ instead.
 
+### Treasure
+
+Pick the award: **This encounter** (the draft's XP out of the ~1,000 XP a level takes, so a Moderate fight
+earns 8% of the level's treasure), **Whole level**, or a **Custom share**. The budget card shows total
+value, currency (scaled by party size), and the expected permanent and consumable item slots by item
+level. Options: uncommon and rare items, consumables, preferring the encounter theme's traits, a share of
+the coins as gems and art objects, a seed, and item categories to exclude.
+
+**Generate treasure** fills slots from `pf2e.equipment-srd` without ever exceeding the total; a slot can
+relax by up to two item levels; whatever is left becomes coins. Rows can be locked (kept on reroll),
+replaced or removed. Outputs: **Loot actor** (in "Encounter Builder: Treasure", no player ownership until
+you grant it), **Add to actor** (a selected token's actor, or pick one), **Chat** (whispered to GMs).
+Treasure is stored with a saved encounter and re-settled against the current party when reopened.
+
 ### Tables
 
 Pick or create a RollTable and roll it with the module resolver (no chat message, nothing marked drawn,
@@ -138,6 +155,10 @@ Severe 120/30, Extreme 160/40). Tiers whose target is 0 or less for the party si
 XP by relative level: −4: 10, −3: 15, −2: 20, −1: 30, 0: 40, +1: 60, +2: 80, +3: 120, +4: 160. Construction
 XP is not an award; the module never awards XP.
 
+Treasure (GM Core Table 10-9): per party level, a total value, permanent and consumable item slots by item
+level, party currency, and currency per additional PC. Currency scales with party size; item slots do not.
+An encounter's share is its XP / 1,000.
+
 Under **Proficiency Without Level** the module takes per-creature XP from `game.pf2e.gm.calculateXP` and
 labels the evaluation as a system calculation; with **Debug mode** on it cross-checks standard totals
 against the same helper.
@@ -161,8 +182,8 @@ holding tags and themes) are created with no player ownership.
 ## Project structure
 
 ```
-src/core      pure logic: budget, catalog, draft, generator, themes, themed-generator, tables, recipes
-src/foundry   adapters: PF2e data paths, party service, catalog, deployment, tables, stores, migrations
+src/core      pure logic: budget, catalog, draft, generator, themes, themed-generator, treasure, tables
+src/foundry   adapters: PF2e data paths, party service, catalogs, deployment, treasure, tables, stores
 src/apps      ApplicationV2 windows: builder, start dialog, panels, table editor
 templates/    Handlebars parts and partials      styles/   Nocturne stylesheet
 tests/        Vitest (unit + mocked)             src/quench/  in-Foundry batches
@@ -171,11 +192,11 @@ docs/         VERIFICATION.md, MANUAL-TESTS.md, implementation prompt
 
 ## Compatibility and status
 
-- Unit and mocked tests: `npm test` (157 passing). Lint, typecheck and build: clean.
+- Unit and mocked tests: `npm test` (191 passing). Lint, typecheck and build: clean.
 - Runtime in Foundry: run the Quench batches and `docs/MANUAL-TESTS.md` on your Foundry 14 + PF2e 8
   world, then record versions in `docs/VERIFICATION.md`. `compatibility.verified` is set only after that.
 - Not implemented (no controls shown): hazards, elite/weak adjustments, scheduled regional checks,
-  conditional table rules, XP awards.
+  conditional table rules, XP awards, treasure for new characters (Table 10-10).
 
 ## Design
 
@@ -185,6 +206,7 @@ checkboxes, `prefers-reduced-motion` and visible focus.
 
 ## License
 
-Code, templates, styles, tests and documentation: MIT (`LICENSE`). The encounter-building mechanics in
-`src/rules/encounter-tables.ts` are ORC Licensed Material from _Pathfinder GM Core_; see `LICENSE-ORC.md`.
+Code, templates, styles, tests and documentation: MIT (`LICENSE`). The encounter-building and treasure
+mechanics in `src/rules/encounter-tables.ts` and `src/rules/treasure-tables.ts` are ORC Licensed Material
+from _Pathfinder GM Core_; see `LICENSE-ORC.md`.
 No Paizo Reserved Material is included; example names in tests and docs are invented.

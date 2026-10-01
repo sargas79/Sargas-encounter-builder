@@ -1354,3 +1354,100 @@ button.sargas-encounter-builder-launch {
     transition: none !important;
   }
 }
+
+/* -------------------------------------------------- *
+ * Treasure
+ * -------------------------------------------------- */
+
+.seb-treasure-budget {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 4px 0 2px;
+}
+.seb-treasure-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background: var(--seb-bg-inset);
+  border: 1px solid var(--seb-border-soft);
+  border-radius: var(--seb-radius-sm);
+  min-width: 0;
+}
+.seb-treasure-stat > strong {
+  font-size: 16px;
+  color: var(--seb-text);
+  letter-spacing: 0.01em;
+}
+.seb-treasure-stat > .seb-text-dim {
+  font-size: 11px;
+}
+
+/* Chips that are labels wrapping a hidden checkbox (category toggles). */
+.seb label.seb-chip {
+  margin: 0;
+}
+.seb .seb-chip-input {
+  display: none;
+}
+
+.seb-treasure-meter {
+  margin: 0 0 8px;
+}
+.seb-treasure-track {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  background: var(--seb-bg-inset);
+  border: 1px solid var(--seb-border-soft);
+  border-radius: 5px;
+}
+.seb-treasure-fill {
+  height: 100%;
+  transition: width 220ms ease;
+}
+.seb-treasure-fill.is-items,
+.seb-swatch.is-items {
+  background: var(--seb-accent);
+}
+.seb-treasure-fill.is-valuables,
+.seb-swatch.is-valuables {
+  background: #c084fc;
+}
+.seb-treasure-fill.is-coins,
+.seb-swatch.is-coins {
+  background: var(--seb-warn);
+}
+.seb-treasure-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--seb-text-muted);
+}
+.seb-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 4px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+.seb-treasure-trace {
+  margin-top: 8px;
+}
+.seb-treasure-trace > summary {
+  cursor: pointer;
+  font-size: 11px;
+  user-select: none;
+}
+.seb-treasure-trace[open] > summary {
+  margin-bottom: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .seb-treasure-fill {
+    transition: none;
+  }
+}

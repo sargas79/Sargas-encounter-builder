@@ -19,6 +19,8 @@ export const FLAGS = {
   importedFrom: "importedFrom",
   /** Marker on tokens created by a deployment operation. */
   deployment: "deployment",
+  /** Provenance marker on Loot actors created from a treasure result. */
+  treasure: "treasure",
 } as const;
 
 /** World setting keys. */
@@ -41,6 +43,7 @@ export const SETTINGS = {
 export const DOCUMENT_NAMES = {
   dataJournal: "Encounter Builder Data",
   recipeFolder: "Encounter Builder: Saved Encounters",
+  lootFolder: "Encounter Builder: Treasure",
 } as const;
 
 /** Hooks emitted by the module (all prefixed with the module id). */
