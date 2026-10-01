@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4
+
+- Fixed: Generate (and any action that posts a message or warning) failed with "Template part
+  'header' must render a single HTML element". The header part now has one root element; a test
+  renders every part template in both empty and fully populated states and asserts a single root.
+
 ## 0.2.3
 
 - Fixed: the workspace opened stuck at the top-left corner, with an empty Build tab, "0 compendiums"
