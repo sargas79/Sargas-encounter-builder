@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Fixed: the launchers (dragon tool in the Token controls, button in the Actors sidebar header) did not
+  appear on first load. Their hooks were registered after Foundry had already rendered the scene
+  controls; they are now registered at `init`, and the controls are redrawn on `ready`.
+
 ## 0.2.1
 
 - **Upgrading from 0.1.0.** The old id `pf2e-encounter-builder` is also used by an unrelated module on
