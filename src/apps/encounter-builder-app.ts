@@ -36,6 +36,7 @@ import type { ResolvedParty } from "../foundry/party-service.js";
 import { services } from "../foundry/services.js";
 import { getSetting } from "../foundry/settings.js";
 import { SETTINGS } from "../constants.js";
+import { GeneratorPanel } from "./generator-panel.js";
 
 const TEMPLATES = `modules/${MODULE_ID}/templates/builder`;
 
@@ -89,6 +90,8 @@ export class EncounterBuilderApp extends Base {
       refreshCatalog: EncounterBuilderApp.#onRefreshCatalog,
       editTags: EncounterBuilderApp.#onEditTags,
       togglePack: EncounterBuilderApp.#onTogglePack,
+      ext: EncounterBuilderApp.#onExtensionAction,
+      replaceEntry: EncounterBuilderApp.#onReplaceEntry,
     },
   };
 
@@ -115,8 +118,8 @@ export class EncounterBuilderApp extends Base {
   #unsubscribe: (() => void)[] = [];
   #listenersAttached = false;
   #search = debounce(() => void this.#runSearch(), 250);
-  /** Extension hooks filled by later milestones (generator, tables, saved, deploy). */
-  extensions: Record<string, unknown> = {};
+  /** Extensions: generator, tables, saved, deploy. Each may provide prepareContext/onChange/onDrop. */
+  extensions: Record<string, unknown> = { generator: new GeneratorPanel(this) };
 
   static async open(): Promise<EncounterBuilderApp | null> {
     if (!isGM()) {
@@ -612,6 +615,35 @@ export class EncounterBuilderApp extends Base {
   /* -------------------------------------------- */
   /*  Actions                                     */
   /* -------------------------------------------- */
+
+  /** Generic dispatcher: data-ext="<extension>" data-method="<method>" [data-uuid]. */
+  static async #onExtensionAction(
+    this: EncounterBuilderApp,
+    _event: Event,
+    target: HTMLElement,
+  ): Promise<void> {
+    const ext = this.extensions[target.dataset.ext ?? ""] as Record<string, unknown> | undefined;
+    const method = target.dataset.method ?? "";
+    const fn = ext?.[method];
+    if (typeof fn !== "function") return;
+    const uuid = target.dataset.uuid ?? target.closest<HTMLElement>("[data-uuid]")?.dataset.uuid;
+    try {
+      await (fn as (arg?: string, target?: HTMLElement) => Promise<void>).call(ext, uuid, target);
+    } catch (error) {
+      console.error(`${MODULE_ID} | ${target.dataset.ext}.${method} failed`, error);
+      this.pushMessage(
+        "error",
+        t("errors.generic", { message: error instanceof Error ? error.message : String(error) }),
+      );
+      await this.render({ parts: ["header"] });
+    }
+  }
+
+  static async #onReplaceEntry(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
+    const uuid = target.closest<HTMLElement>("[data-uuid]")?.dataset.uuid;
+    const generator = this.extensions.generator as { replaceEntry(uuid: string): Promise<void> } | undefined;
+    if (uuid && generator) await generator.replaceEntry(uuid);
+  }
 
   static async #onSelectTab(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
     const tab = target.dataset.tab as TabId | undefined;

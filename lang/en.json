@@ -1,6 +1,8 @@
 {
   "pf2e-encounter-builder": {
-    "app": { "title": "Encounter Builder" },
+    "app": {
+      "title": "Encounter Builder"
+    },
     "tabs": {
       "party": "Party",
       "build": "Build",
@@ -68,7 +70,10 @@
       "defaultName": "Party",
       "deleteTitle": "Delete party profile",
       "deleteConfirm": "Delete the party profile \"{name}\"? Actors are not affected.",
-      "kind": { "linked": "linked to Party actor", "standalone": "standalone" },
+      "kind": {
+        "linked": "linked to Party actor",
+        "standalone": "standalone"
+      },
       "linkedHint": "Members come from the linked PF2e Party actor. Toggle participation here; edit membership on the Party actor.",
       "roster": "Roster",
       "counted": "counted",
@@ -201,6 +206,55 @@
       "dropNotNpc": "Only NPC actors with a level can be added to an encounter.",
       "sourceMissing": "Source creature {uuid} could not be loaded.",
       "crossCheckMismatch": "XP cross-check: module computed {module} XP, PF2e system computed {system} XP."
+    },
+    "generator": {
+      "title": "Balanced random generation",
+      "relativeMin": "Relative level ≥",
+      "relativeMax": "Relative level ≤",
+      "minCount": "Min creatures",
+      "maxCount": "Max creatures",
+      "composition": {
+        "label": "Composition",
+        "unrestricted": "unrestricted",
+        "solo": "solo",
+        "pair": "pair",
+        "group": "group (3+, none above +1)",
+        "bossWithSupport": "boss with support"
+      },
+      "duplicateCap": "Max copies of one creature",
+      "seed": "Seed (optional)",
+      "seedPlaceholder": "leave empty for random",
+      "filtersHint": "Uses the catalog's pack, trait, tag and rarity filters above. Hard constraints are never loosened.",
+      "lockedHint": "{count} locked entries are kept.",
+      "excluded": "Excluded",
+      "generate": "Generate",
+      "regenerate": "Regenerate",
+      "replace": "Replace this entry",
+      "lastSeed": "Seed",
+      "feasible": "{count} feasible level combinations",
+      "capped": "enumeration cap reached",
+      "fit": {
+        "exact": "Exact fit",
+        "near": "Near fit",
+        "under": "Under budget"
+      },
+      "resultMessage": {
+        "exact": "Generated an exact fit: {total} / {target} XP.",
+        "near": "Generated a near fit: {total} / {target} XP ({difference}).",
+        "under": "No closer fit exists: {total} / {target} XP ({difference})."
+      },
+      "failure": {
+        "threatUnavailable": "The selected threat has no valid budget for this party size.",
+        "invalidParty": "The party is not valid for generation.",
+        "countRangeInvalid": "The creature count range is invalid (min {minCount}, max {maxCount}).",
+        "lockedOutOfRange": "Locked entry \"{name}\" is {relativeLevel} levels from the party and outside the XP table.",
+        "lockedOverBudget": "Locked entries already cost {lockedXP} XP, {overage} over the {target} XP target.",
+        "lockedViolatesComposition": "Locked entries cannot satisfy the \"{composition}\" composition.",
+        "emptyCatalog": "No creatures match the selected compendiums and filters.",
+        "noCandidatesInLevelBounds": "No creature falls within relative levels {relMin}..{relMax}.",
+        "noFeasibleComposition": "No combination satisfies the budget, count, level and composition constraints.",
+        "enumerationCapped": "Too many combinations to search; narrow the filters or count range."
+      }
     }
   }
 }

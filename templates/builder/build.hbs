@@ -66,6 +66,7 @@
             <td class="actions">
               <button type="button" data-action="lockCreature" title="{{localize "pf2e-encounter-builder.build.lock"}}"><i class="fa-solid {{#if this.locked}}fa-lock{{else}}fa-lock-open{{/if}}"></i></button>
               <button type="button" data-action="inspectCreature" title="{{localize "pf2e-encounter-builder.build.inspect"}}"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" data-action="replaceEntry" title="{{localize "pf2e-encounter-builder.generator.replace"}}" {{#if this.locked}}disabled{{/if}}><i class="fa-solid fa-shuffle"></i></button>
               <button type="button" data-action="removeCreature" title="{{localize "pf2e-encounter-builder.build.remove"}}"><i class="fa-solid fa-xmark"></i></button>
             </td>
           </tr>
