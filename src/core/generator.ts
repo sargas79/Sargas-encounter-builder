@@ -50,6 +50,9 @@ export interface GeneratorInput {
   duplicateCap?: number;
   excludeUuids?: string[];
   locked?: LockedEntry[];
+  /** Minimum / maximum number of distinct stat blocks among generated (non-locked) creatures. */
+  minDistinctCreatures?: number;
+  maxDistinctCreatures?: number;
   rng?: Rng;
   /** Enumeration budget; reported as `capped` when hit. */
   maxEnumerated?: number;
@@ -133,6 +136,18 @@ export function compositionSatisfied(relativeLevels: number[], composition: Comp
       if (bosses !== 1) return false;
       return relativeLevels.filter((r) => r !== max).every((r) => r <= max - 2);
     }
+    case "warband": {
+      // One leader strictly above 2+ troops.
+      if (n < 3) return false;
+      const max = Math.max(...relativeLevels);
+      if (relativeLevels.filter((r) => r === max).length !== 1) return false;
+      return relativeLevels.filter((r) => r !== max).every((r) => r <= max - 1);
+    }
+    case "mixedPatrol": {
+      // 2–5 creatures within two levels of each other.
+      if (n < 2 || n > 5) return false;
+      return Math.max(...relativeLevels) - Math.min(...relativeLevels) <= 2;
+    }
   }
 }
 
@@ -155,6 +170,10 @@ function compositionStillPossible(
     case "bossWithSupport":
       // At most one creature may hold the current maximum; we validate fully at the leaf.
       return maxTotal >= 2;
+    case "warband":
+      return maxTotal >= 3;
+    case "mixedPatrol":
+      return n <= 5 && (n < 2 || Math.max(...partial) - Math.min(...partial) <= 2);
   }
 }
 
@@ -337,16 +356,31 @@ export function generateEncounter(input: GeneratorInput): GeneratorResult {
   const chosen = pickWeighted(rng, pool, weight);
 
   // Fill slots with concrete creatures.
+  const minDistinct = Math.max(0, Math.floor(input.minDistinctCreatures ?? 0));
+  const maxDistinct = Math.max(1, Math.floor(input.maxDistinctCreatures ?? Number.MAX_SAFE_INTEGER));
   const usage = new Map<string, number>(lockedUsage);
   const chosenTraits = new Set<string>(locked.flatMap((l) => l.traits ?? []));
   const generated = new Map<string, GeneratedEntry>();
+  const totalToFill = chosen.size;
+  let filled = 0;
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i]!;
     for (let k = 0; k < chosen.counts[i]!; k++) {
-      const eligible = slot.candidates.filter((c) => (usage.get(c.uuid) ?? 0) < duplicateCap);
+      let eligible = slot.candidates.filter((c) => (usage.get(c.uuid) ?? 0) < duplicateCap);
+      const distinctSoFar = generated.size;
+      const remaining = totalToFill - filled;
+      // Hard distinct-count constraints: force new stat blocks while still short of the minimum,
+      // and force reuse once the maximum is reached.
+      if (distinctSoFar >= maxDistinct) eligible = eligible.filter((c) => generated.has(c.uuid));
+      else if (distinctSoFar + remaining <= minDistinct)
+        eligible = eligible.filter((c) => !generated.has(c.uuid));
       if (eligible.length === 0) {
-        // Capacity math guarantees this cannot happen; guard anyway.
-        return fail("noFeasibleComposition", { stage: "fill", relative: slot.relative }, enumerated, capped);
+        return fail(
+          "noFeasibleComposition",
+          { stage: "fill", relative: slot.relative, minDistinct, maxDistinct },
+          enumerated,
+          capped,
+        );
       }
       // Soft preference: share traits with what is already chosen, and reuse stat blocks already in use.
       const creature = pickWeighted(rng, shuffle(rng, eligible), (c) => {
@@ -354,6 +388,7 @@ export function generateEncounter(input: GeneratorInput): GeneratorResult {
         const reuse = usage.has(c.uuid) ? 1 : 0;
         return 1 + 0.5 * shared + reuse;
       });
+      filled++;
       usage.set(creature.uuid, (usage.get(creature.uuid) ?? 0) + 1);
       for (const t of creature.traits) chosenTraits.add(t);
       const existing = generated.get(creature.uuid);
@@ -462,6 +497,13 @@ export function hardConstraintViolations(input: GeneratorInput, result: Generato
   }
   if (!compositionSatisfied(relatives, composition))
     violations.push(`composition ${composition} not satisfied`);
+  const distinctGenerated = new Set(result.entries.filter((e) => !e.locked).map((e) => e.uuid)).size;
+  if (distinctGenerated > 0) {
+    if (input.minDistinctCreatures && distinctGenerated < input.minDistinctCreatures)
+      violations.push(`distinct ${distinctGenerated} below minimum ${input.minDistinctCreatures}`);
+    if (input.maxDistinctCreatures && distinctGenerated > input.maxDistinctCreatures)
+      violations.push(`distinct ${distinctGenerated} above maximum ${input.maxDistinctCreatures}`);
+  }
   const sum = relatives.reduce((s, r) => s + xpForRelativeLevel(r), 0);
   if (sum !== result.totalXP) violations.push(`reported total ${result.totalXP} != recomputed ${sum}`);
   return violations;

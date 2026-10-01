@@ -11,6 +11,8 @@ export const FLAGS = {
   result: "result",
   /** Custom creature tag map on the module data JournalEntry. */
   tags: "tags",
+  /** GM-authored themes on the module data JournalEntry. */
+  themes: "themes",
   /** Marker that a JournalEntry is the module data journal. */
   dataJournal: "dataJournal",
   /** Provenance marker on imported world Actors. */
