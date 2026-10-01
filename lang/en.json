@@ -254,7 +254,8 @@
         "noCandidatesInLevelBounds": "No creature falls within relative levels {relMin}..{relMax}.",
         "noFeasibleComposition": "No combination satisfies the budget, count, level and composition constraints.",
         "enumerationCapped": "Too many combinations to search; narrow the filters or count range."
-      }
+      },
+      "exclude": "Exclude from generation"
     },
     "deploy": {
       "options": "Deployment",

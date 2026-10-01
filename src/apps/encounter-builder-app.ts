@@ -6,7 +6,8 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MODULE_ID } from "../constants.js";
-import { THREAT_LEVELS, type ThreatLevel, type ReferenceLevelPolicy } from "../core/budget.js";
+import { THREAT_LEVELS, tierBudget, type ThreatLevel, type ReferenceLevelPolicy } from "../core/budget.js";
+import { escapeHtml, splitList } from "../core/util.js";
 import type { CatalogEntry, CatalogFilter } from "../core/catalog.js";
 import {
   addEntry,
@@ -555,14 +556,16 @@ export class EncounterBuilderApp extends Base {
     const data = getDragEventData(event);
     const zone = (event.target as HTMLElement).closest<HTMLElement>(".peb-dropzone");
     const purpose = zone?.dataset.purpose;
-    if (data?.type !== "Actor" || typeof data.uuid !== "string") {
-      if (purpose) this.pushMessage("warn", t("messages.dropNotActor"));
-      await this.render({ parts: ["party", "build"] });
-      return;
-    }
-    if (purpose === "party") await this.#addPartyMember(data.uuid);
-    else if (purpose === "draft") await this.#addDraftFromUuid(data.uuid);
-    else {
+    const isActor = data?.type === "Actor" && typeof data.uuid === "string";
+    if (purpose === "party" || purpose === "draft") {
+      if (!isActor) {
+        this.pushMessage("warn", t("messages.dropNotActor"));
+        await this.render({ parts: ["party", "build"] });
+        return;
+      }
+      if (purpose === "party") await this.#addPartyMember(data.uuid);
+      else await this.#addDraftFromUuid(data.uuid);
+    } else {
       for (const ext of Object.values(this.extensions)) {
         const fn = (
           ext as {
@@ -844,18 +847,7 @@ export async function ensurePartials(): Promise<void> {
 }
 
 function budgetFor(threat: ThreatLevel, roster: RosterState) {
-  if (roster.partySize <= 0) return null;
-  // Imported lazily to keep this file's imports focused.
-  const { tierBudget } = budgetModule;
-  return tierBudget(threat, roster.partySize);
-}
-import * as budgetModule from "../core/budget.js";
-
-function splitList(value: string): string[] {
-  return value
-    .split(/[,;]+/)
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
+  return roster.partySize > 0 ? tierBudget(threat, roster.partySize) : null;
 }
 
 function warningLevel(code: string): Message["level"] {
@@ -913,13 +905,7 @@ export async function promptSelect(
   return typeof result === "string" && result ? result : null;
 }
 
-export function escapeHtml(text: string): string {
-  return text.replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
-  );
-}
-
 export function escapeAttr(text: string): string {
   return escapeHtml(text);
 }
+export { escapeHtml };

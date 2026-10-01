@@ -10,6 +10,7 @@ import { t } from "../foundry/i18n.js";
 import { services } from "../foundry/services.js";
 import { isGM } from "../foundry/compat.js";
 import type { EncounterBuilderApp } from "./encounter-builder-app.js";
+import { randomHexSeed } from "../core/util.js";
 
 export interface GeneratorOptions {
   relativeMin: number;
@@ -204,7 +205,8 @@ export class GeneratorPanel {
       this.lastResult = result;
       this.lastSeed = seed;
       if (result.ok) {
-        const entries = mergeEntries(result.entries);
+        const previousLocks = new Map(draft.entries.map((e) => [e.uuid, e.locked]));
+        const entries = mergeEntries(result.entries, previousLocks);
         const newDraft: Draft = {
           entries,
           origin: "generated",
@@ -266,20 +268,21 @@ function mergeEntries(
     img: string | null;
     packLabel: string | null;
   }[],
+  previousLocks: Map<string, boolean>,
 ): DraftEntry[] {
   const map = new Map<string, DraftEntry>();
   for (const e of entries) {
     const existing = map.get(e.uuid);
     if (existing) {
       existing.quantity += e.quantity;
-      existing.locked = existing.locked || e.locked;
+      existing.locked = existing.locked || (previousLocks.get(e.uuid) ?? false);
     } else {
       map.set(e.uuid, {
         uuid: e.uuid,
         name: e.name,
         level: e.level,
         quantity: e.quantity,
-        locked: e.locked,
+        locked: previousLocks.get(e.uuid) ?? false,
         img: e.img,
         packLabel: e.packLabel,
         traits: e.traits,
@@ -290,5 +293,5 @@ function mergeEntries(
 }
 
 function randomSeed(): string {
-  return Math.floor(Math.random() * 0xffffffff).toString(16);
+  return randomHexSeed();
 }

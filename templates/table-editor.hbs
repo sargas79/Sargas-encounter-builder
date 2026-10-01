@@ -30,10 +30,10 @@
 <div class="peb-row {{#if this.invalid}}invalid{{/if}} {{#if this.isNative}}readonly{{/if}}" data-index="{{this.index}}">
   <div class="peb-inline">
     {{#if ../isWeight}}
-    <input type="number" name="row.{{this.index}}.weight" value="{{this.weight}}" min="0" title="{{localize "pf2e-encounter-builder.editor.weight"}}">
+    <input type="number" name="row.{{this.index}}.weight" value="{{this.weight}}" min="0" title="{{localize "pf2e-encounter-builder.editor.weight"}}" {{#if this.isNative}}disabled{{/if}}>
     <span class="peb-tags">{{this.range.[0]}}–{{this.range.[1]}}</span>
     {{else}}
-    <input type="number" name="row.{{this.index}}.lo" value="{{this.range.[0]}}">–<input type="number" name="row.{{this.index}}.hi" value="{{this.range.[1]}}">
+    <input type="number" name="row.{{this.index}}.lo" value="{{this.range.[0]}}" {{#if this.isNative}}disabled{{/if}}>–<input type="number" name="row.{{this.index}}.hi" value="{{this.range.[1]}}" {{#if this.isNative}}disabled{{/if}}>
     {{/if}}
   </div>
   <div class="peb-row-main">

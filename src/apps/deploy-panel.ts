@@ -17,6 +17,7 @@ export class DeployPanel {
   options: DeploymentOptions | null = null;
   origin: { x: number; y: number } | null = null;
   pickingOrigin = false;
+  busy = false;
   lastOutcome: { ledger: OperationLedger; unplaced: number } | null = null;
   cleanupDone: { removed: number; failed: number } | null = null;
   #originHandler: ((event: PointerEvent) => void) | null = null;
@@ -59,8 +60,8 @@ export class DeployPanel {
         ? `${Math.round(this.origin.x)}, ${Math.round(this.origin.y)}`
         : t("deploy.originCenter"),
       pickingOrigin: this.pickingOrigin,
-      busy: this.service.busy,
-      canDeploy: !this.service.busy && preview.blockers.length === 0 && isGM(),
+      busy: this.busy,
+      canDeploy: !this.busy && preview.blockers.length === 0 && isGM(),
       outcome: ledger
         ? {
             summary: ledger.summary(),
@@ -153,9 +154,10 @@ export class DeployPanel {
   }
 
   async deploy(): Promise<void> {
-    if (!isGM() || this.service.busy) return;
+    if (!isGM() || this.busy || this.service.busy) return;
     const options = this.#options();
     this.cleanupDone = null;
+    this.busy = true;
     await this.app.render({ parts: ["deploy"] });
     try {
       const outcome = await this.service.deploy(this.app.state.draft.entries, options, this.origin);
@@ -177,6 +179,8 @@ export class DeployPanel {
         "error",
         t("errors.generic", { message: error instanceof Error ? error.message : String(error) }),
       );
+    } finally {
+      this.busy = false;
     }
     await this.app.render({ parts: ["header", "deploy"] });
   }

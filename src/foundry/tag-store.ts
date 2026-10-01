@@ -10,12 +10,12 @@ export class TagStoreService {
   #cache: TagStore | null = null;
 
   tagsFor(uuid: string): string[] {
-    return this.load().tags[uuid] ?? [];
+    return this.load().entries.find((e) => e.uuid === uuid)?.tags ?? [];
   }
 
   allTags(): string[] {
     const set = new Set<string>();
-    for (const tags of Object.values(this.load().tags)) for (const t of tags) set.add(t);
+    for (const entry of this.load().entries) for (const t of entry.tags) set.add(t);
     return [...set].sort();
   }
 
@@ -38,8 +38,9 @@ export class TagStoreService {
   async setTags(uuid: string, tags: string[]): Promise<void> {
     if (!game.user.isGM) throw new Error("GM only");
     const store = structuredClone(this.load());
-    if (tags.length) store.tags[uuid] = [...new Set(tags)].sort();
-    else delete store.tags[uuid];
+    // Arrays are replaced wholesale by setFlag, so removals persist (object keys would be merged).
+    store.entries = store.entries.filter((e) => e.uuid !== uuid);
+    if (tags.length) store.entries.push({ uuid, tags: [...new Set(tags)].sort() });
     const journal = await this.#ensureJournal();
     await journal.setFlag(MODULE_ID, FLAGS.tags, store);
     this.#cache = store;

@@ -14,6 +14,7 @@ import { services } from "../foundry/services.js";
 import { createEncounterTable, tableToModel } from "../foundry/table-flags.js";
 import { listEncounterTables, rollEncounterTable, type TableRollReport } from "../foundry/table-resolver.js";
 import type { EncounterBuilderApp } from "./encounter-builder-app.js";
+import { randomHexSeed } from "../core/util.js";
 import { promptText } from "./encounter-builder-app.js";
 
 export class TablesPanel {
@@ -175,7 +176,7 @@ export class TablesPanel {
     );
     if (candidates.length === 0 && tp.traits.length > 0)
       candidates = await catalog.search({ traits: tp.traits });
-    const seed = Math.floor(Math.random() * 0xffffffff).toString(16);
+    const seed = randomHexSeed();
     const result = generateEncounter({
       threat: tp.threat ?? resolved.profile.selectedThreat,
       partySize: roster.partySize,
@@ -258,7 +259,7 @@ export class TablesPanel {
       img: c.img,
       packLabel: c.packLabel,
     }));
-    const seed = Math.floor(Math.random() * 0xffffffff).toString(16);
+    const seed = randomHexSeed();
     const result = generateEncounter({
       threat: resolved.profile.selectedThreat,
       partySize: roster.partySize,

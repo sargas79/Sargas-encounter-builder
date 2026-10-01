@@ -166,8 +166,11 @@ export type ResultFlags = ResultFlagsV1;
 
 export interface TagStoreV1 {
   schemaVersion: 1;
-  /** Source UUID -> tags such as "family:goblinoid" or "environment:forest". */
-  tags: Record<string, string[]>;
+  /**
+   * Entries of source UUID -> tags such as "family:goblinoid" or "environment:forest".
+   * Stored as an array because UUIDs contain dots, which Foundry expands as nested paths in object keys.
+   */
+  entries: { uuid: string; tags: string[] }[];
 }
 
 export type TagStore = TagStoreV1;
@@ -288,11 +291,12 @@ export function validateTagStore(raw: unknown): ValidationResult<TagStore> {
   const errors: string[] = [];
   if (!isObject(raw)) return { ok: false, errors: ["not an object"] };
   if (raw.schemaVersion !== 1) errors.push(`unsupported schemaVersion ${String(raw.schemaVersion)}`);
-  if (!isObject(raw.tags)) errors.push("tags missing");
+  if (!Array.isArray(raw.entries)) errors.push("entries missing");
   else {
-    for (const [uuid, tags] of Object.entries(raw.tags)) {
-      if (!Array.isArray(tags) || !tags.every(isString)) errors.push(`tags[${uuid}] invalid`);
-    }
+    raw.entries.forEach((e, i) => {
+      if (!isObject(e) || !isString(e.uuid) || !Array.isArray(e.tags) || !e.tags.every(isString))
+        errors.push(`entries[${i}] invalid`);
+    });
   }
   return errors.length ? { ok: false, errors } : { ok: true, value: raw as unknown as TagStore };
 }
@@ -325,5 +329,5 @@ export function emptyResultFlags(kind: ResultKind = "narrative"): ResultFlags {
 }
 
 export function emptyTagStore(): TagStore {
-  return { schemaVersion: 1, tags: {} };
+  return { schemaVersion: 1, entries: [] };
 }

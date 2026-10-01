@@ -37,7 +37,10 @@ export class SettingsProfileStore implements ProfileStore {
     return out;
   }
   async save(profiles: PartyProfile[]): Promise<void> {
-    await game.settings.set(MODULE_ID, SETTINGS.partyProfiles, profiles);
+    // Preserve records that failed validation (e.g. written by a newer build) instead of dropping them.
+    const raw = (game.settings.get(MODULE_ID, SETTINGS.partyProfiles) as unknown[]) ?? [];
+    const invalid = raw.filter((r) => !validatePartyProfile(r).ok);
+    await game.settings.set(MODULE_ID, SETTINGS.partyProfiles, [...profiles, ...invalid]);
   }
   activeId(): string {
     return String(game.settings.get(MODULE_ID, SETTINGS.activeParty) ?? "");

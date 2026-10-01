@@ -39,6 +39,7 @@
               <button type="button" data-action="addCreature" title="{{localize "pf2e-encounter-builder.build.add"}}"><i class="fa-solid fa-plus"></i></button>
               <button type="button" data-action="inspectCreature" title="{{localize "pf2e-encounter-builder.build.inspect"}}"><i class="fa-solid fa-eye"></i></button>
               <button type="button" data-action="editTags" title="{{localize "pf2e-encounter-builder.build.editTags"}}"><i class="fa-solid fa-tag"></i></button>
+              <button type="button" data-action="ext" data-ext="generator" data-method="exclude" title="{{localize "pf2e-encounter-builder.generator.exclude"}}"><i class="fa-solid fa-ban"></i></button>
             </td>
           </tr>
           {{else}}
@@ -66,6 +67,7 @@
             <td class="actions">
               <button type="button" data-action="lockCreature" title="{{localize "pf2e-encounter-builder.build.lock"}}"><i class="fa-solid {{#if this.locked}}fa-lock{{else}}fa-lock-open{{/if}}"></i></button>
               <button type="button" data-action="inspectCreature" title="{{localize "pf2e-encounter-builder.build.inspect"}}"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" data-action="ext" data-ext="generator" data-method="exclude" title="{{localize "pf2e-encounter-builder.generator.exclude"}}"><i class="fa-solid fa-ban"></i></button>
               <button type="button" data-action="replaceEntry" title="{{localize "pf2e-encounter-builder.generator.replace"}}" {{#if this.locked}}disabled{{/if}}><i class="fa-solid fa-shuffle"></i></button>
               <button type="button" data-action="removeCreature" title="{{localize "pf2e-encounter-builder.build.remove"}}"><i class="fa-solid fa-xmark"></i></button>
             </td>

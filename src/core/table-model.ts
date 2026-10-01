@@ -96,7 +96,8 @@ export function validateTable(model: TableModel, context: ValidationContext = {}
   const rows = [...model.rows].sort((a, b) => a.range[0] - b.range[0]);
   for (const row of rows) {
     const [lo, hi] = row.range;
-    if (!Number.isInteger(lo) || !Number.isInteger(hi) || lo > hi)
+    const emptyWeightRow = model.mode === "weight" && row.weight <= 0;
+    if (!Number.isInteger(lo) || !Number.isInteger(hi) || (lo > hi && !emptyWeightRow))
       issues.push({ level: "error", code: "rangeInvalid", rowId: row.id, data: { range: row.range } });
     if (model.mode === "weight" && row.weight <= 0)
       issues.push({ level: "warning", code: "weightZero", rowId: row.id });

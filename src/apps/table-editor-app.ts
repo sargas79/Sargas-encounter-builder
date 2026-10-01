@@ -31,6 +31,7 @@ import {
 import { t } from "../foundry/i18n.js";
 import { services } from "../foundry/services.js";
 import { saveTable, tableToModel, type RowEdit } from "../foundry/table-flags.js";
+import { splitList } from "../core/util.js";
 
 const Base = HandlebarsApplicationMixin()(ApplicationV2()) as any;
 
@@ -558,13 +559,6 @@ export class EncounterTableEditor extends Base {
       );
     }
   }
-}
-
-function splitList(value: string, lowercase = true): string[] {
-  return value
-    .split(/[,;\n]+/)
-    .map((s) => (lowercase ? s.trim().toLowerCase() : s.trim()))
-    .filter(Boolean);
 }
 
 function parseIntList(value: string): number[] {

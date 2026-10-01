@@ -507,3 +507,15 @@ describe("T16: narrative results do not create creatures", () => {
     expect(nativeTextForRow({ ...emptyResultFlags("none") }, names)).toBe("No encounter");
   });
 });
+
+describe("review fixes", () => {
+  it("weight mode: a zero-weight row is a warning, not a range error", () => {
+    const rows = [
+      row("a", [1, 3], { kind: "none" }, { weight: 3 }),
+      row("z", [4, 3], { kind: "none" }, { weight: 0 }),
+    ];
+    const issues = validateTable(table("RollTable.w0", "1d3", rows, { mode: "weight" }));
+    expect(issues.some((i) => i.code === "rangeInvalid")).toBe(false);
+    expect(issues.some((i) => i.code === "weightZero" && i.level === "warning")).toBe(true);
+  });
+});

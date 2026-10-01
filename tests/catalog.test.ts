@@ -168,3 +168,14 @@ describe("catalog model", () => {
     ]);
   });
 });
+
+describe("tag store schema", () => {
+  it("uses array entries so UUIDs (which contain dots) are never object keys", async () => {
+    const { validateTagStore, emptyTagStore } = await import("../src/core/schemas.js");
+    expect(emptyTagStore()).toEqual({ schemaVersion: 1, entries: [] });
+    expect(
+      validateTagStore({ schemaVersion: 1, entries: [{ uuid: "Compendium.a.b.Actor.c", tags: ["x:y"] }] }).ok,
+    ).toBe(true);
+    expect(validateTagStore({ schemaVersion: 1, tags: {} }).ok).toBe(false);
+  });
+});

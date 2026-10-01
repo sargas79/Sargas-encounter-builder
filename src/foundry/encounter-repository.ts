@@ -5,6 +5,7 @@
 import { DOCUMENT_NAMES, FLAGS, MODULE_ID } from "../constants.js";
 import { validateRecipe, type Recipe } from "../core/schemas.js";
 import { documentClass, ownershipLevels } from "./compat.js";
+import { escapeHtml as escape } from "../core/util.js";
 
 export interface RecipeRecord {
   id: string;
@@ -94,7 +95,9 @@ export class JournalRecipeStore implements RecipeStore {
   async update(id: string, name: string, recipe: Recipe): Promise<void> {
     const journal = game.journal.get(id);
     if (!journal) throw new Error(`recipe ${id} not found`);
-    await journal.update({ name, [`flags.${MODULE_ID}.${FLAGS.recipe}`]: recipe });
+    // Replace the flag wholesale: a merge would keep keys (trace, variantOf, generation) the new recipe omits.
+    await journal.update({ name, [`flags.${MODULE_ID}.-=${FLAGS.recipe}`]: null });
+    await journal.setFlag(MODULE_ID, FLAGS.recipe, recipe);
     const page = journal.pages.contents[0];
     if (page)
       await journal.updateEmbeddedDocuments("JournalEntryPage", [
@@ -132,11 +135,4 @@ function summaryHtml(recipe: Recipe): string {
     ? `<p>Saved evaluation: ${escape(ev.partyName)} (${ev.partySize} × level ${ev.referenceLevel}), ${ev.supportedXP} XP, inferred ${escape(ev.inferredLabel)}${ev.complete ? "" : " (incomplete)"}.</p>`
     : "";
   return `<p><em>Managed by PF2e Encounter Builder. Edit it from the Encounter Builder's Saved tab.</em></p><ul>${rows}</ul>${evText}${recipe.notes ? `<p>${escape(recipe.notes)}</p>` : ""}`;
-}
-
-function escape(text: string): string {
-  return text.replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
-  );
 }
