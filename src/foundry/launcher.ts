@@ -13,7 +13,7 @@ export function registerLauncher(): void {
   registered = true;
 
   Hooks.on("getSceneControlButtons", (controls: any) => {
-    if (!game.user.isGM) return;
+    if (!game.user?.isGM || game.system?.id !== "pf2e") return;
     const group = controls?.tokens ?? controls?.notes;
     if (!group) return;
     if (Array.isArray(group.tools)) {
@@ -40,7 +40,7 @@ export function registerLauncher(): void {
   });
 
   Hooks.on("renderActorDirectory", (_app: unknown, html: HTMLElement | { 0?: HTMLElement }) => {
-    if (!game.user.isGM) return;
+    if (!game.user?.isGM || game.system?.id !== "pf2e") return;
     const root: HTMLElement | undefined =
       html instanceof HTMLElement ? html : (html as { 0?: HTMLElement })[0];
     if (!root) return;

@@ -9,8 +9,10 @@ export async function onReady(): Promise<void> {
   const { runMigrations } = await import("./migrations.js");
   await runMigrations();
 
-  const { registerLauncher } = await import("./launcher.js");
-  registerLauncher();
+  // Hooks were registered at init; if the controls or the directory rendered before this client
+  // knew it was a GM, redraw them so the launchers appear without a reload.
+  ui.controls?.render({ reset: true });
+  ui.actors?.render();
 
   const quench = (globalThis as { quench?: Quench }).quench;
   if (quench) {

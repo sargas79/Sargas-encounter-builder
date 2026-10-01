@@ -277,6 +277,7 @@ declare global {
     };
     sidebar?: any;
     controls?: any;
+    actors?: any;
   };
   const CONST: {
     GRID_TYPES: { GRIDLESS: number; SQUARE: number };

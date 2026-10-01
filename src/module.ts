@@ -3,6 +3,7 @@
  */
 import { MODULE_ID } from "./constants.js";
 import { registerSettings } from "./foundry/settings.js";
+import { registerLauncher } from "./foundry/launcher.js";
 import { log } from "./foundry/i18n.js";
 
 let initialized = false;
@@ -11,6 +12,8 @@ Hooks.once("init", () => {
   if (initialized) return;
   initialized = true;
   registerSettings();
+  // Scene controls render before `ready`; the launcher hooks must exist by then (they re-check isGM).
+  registerLauncher();
   log("initialized");
 });
 
