@@ -9,7 +9,14 @@
  *  - table/result flags: RollTable and TableResult flags (migrated lazily on read; see table-flags.ts)
  */
 import { FLAGS, MODULE_ID, SETTINGS } from "../constants.js";
-import { SCHEMA_VERSIONS } from "../core/schemas.js";
+import {
+  SCHEMA_VERSIONS,
+  validateRecipe,
+  validateResultFlags,
+  validateTableFlags,
+  validateTagStore,
+  validateThemeStore,
+} from "../core/schemas.js";
 import { getSetting, setSetting } from "./settings.js";
 
 /** Bump when any persisted schema changes; add a step to MIGRATIONS below. */
@@ -17,6 +24,56 @@ export const CURRENT_DATA_VERSION = 2;
 
 /** Module id used by the 0.1.0 pre-release; its document flags are copied forward once. */
 export const LEGACY_MODULE_ID = "pf2e-encounter-builder";
+
+/** Authors whose `pf2e-encounter-builder` manifest is ours (the 0.1.0 release listed "sargas79"). */
+const LEGACY_AUTHORS = ["sargas79", "diego vescovini"];
+
+/**
+ * True when a module installed under the legacy id belongs to a different author. The id is also used
+ * by an unrelated package on the Foundry registry, so its flags must never be copied forward.
+ */
+export function legacyModuleIsForeign(
+  installed: { title?: string; authors?: Iterable<{ name?: string; github?: string }> } | null | undefined,
+): boolean {
+  if (!installed) return false;
+  const authors = Array.from(installed.authors ?? []);
+  if (authors.length === 0) return !/encounter builder/i.test(installed.title ?? "");
+  return !authors.some((a) =>
+    [a.name, a.github].some((v) => v && LEGACY_AUTHORS.includes(v.trim().toLowerCase())),
+  );
+}
+
+/**
+ * Select the journal flags worth copying from the legacy namespace: only keys we do not already hold
+ * and only values that validate against our own schemas (foreign or corrupt data is left alone).
+ */
+export function pickLegacyJournalFlags(
+  legacy: Record<string, unknown> | undefined,
+  current: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  const update: Record<string, unknown> = {};
+  if (!legacy || typeof legacy !== "object") return update;
+  const have = current ?? {};
+  const consider = (key: string, valid: boolean) => {
+    if (legacy[key] !== undefined && have[key] === undefined && valid)
+      update[`flags.${MODULE_ID}.${key}`] = legacy[key];
+  };
+  consider(FLAGS.dataJournal, legacy[FLAGS.dataJournal] === true);
+  consider(FLAGS.tags, validateTagStore(legacy[FLAGS.tags]).ok);
+  consider(FLAGS.themes, validateThemeStore(legacy[FLAGS.themes]).ok);
+  if (legacy[FLAGS.recipe] !== undefined && have[FLAGS.recipe] === undefined) {
+    const recipe = migrateRecipeRecord(asRecord(legacy[FLAGS.recipe])).record;
+    if (validateRecipe(recipe).ok) update[`flags.${MODULE_ID}.${FLAGS.recipe}`] = recipe;
+  }
+  // A data-journal marker without a usable store would create an empty, duplicate data journal.
+  if (update[`flags.${MODULE_ID}.${FLAGS.dataJournal}`] && !update[`flags.${MODULE_ID}.${FLAGS.tags}`])
+    delete update[`flags.${MODULE_ID}.${FLAGS.dataJournal}`];
+  return update;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
 
 export type MigrationStep = {
   version: number;
@@ -113,16 +170,18 @@ const MIGRATIONS: MigrationStep[] = [
     version: 2,
     description: "Copy document flags from the pf2e-encounter-builder namespace",
     async run() {
+      if (legacyModuleIsForeign(game.modules.get(LEGACY_MODULE_ID))) {
+        console.warn(
+          `${MODULE_ID} | A module by another author is installed as "${LEGACY_MODULE_ID}"; its data is not migrated.`,
+        );
+        return { changed: 0 };
+      }
       let changed = 0;
       for (const journal of game.journal.contents) {
-        const legacy = journal.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined;
-        if (!legacy || typeof legacy !== "object") continue;
-        const current = (journal.flags?.[MODULE_ID] as Record<string, unknown> | undefined) ?? {};
-        const update: Record<string, unknown> = {};
-        for (const key of [FLAGS.dataJournal, FLAGS.tags, FLAGS.themes, FLAGS.recipe]) {
-          if (legacy[key] !== undefined && current[key] === undefined)
-            update[`flags.${MODULE_ID}.${key}`] = legacy[key];
-        }
+        const update = pickLegacyJournalFlags(
+          journal.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined,
+          journal.flags?.[MODULE_ID] as Record<string, unknown> | undefined,
+        );
         if (Object.keys(update).length === 0) continue;
         await journal.update(update);
         changed++;
@@ -131,18 +190,14 @@ const MIGRATIONS: MigrationStep[] = [
         const legacy = table.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined;
         if (legacy?.[FLAGS.table] === undefined || table.getFlag(MODULE_ID, FLAGS.table) !== undefined)
           continue;
+        if (!validateTableFlags(legacy[FLAGS.table]).ok) continue;
         const results = table.results.contents
-          .filter(
-            (r) =>
-              (r.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined)?.[FLAGS.result] !==
-              undefined,
-          )
           .map((r) => ({
             _id: r.id,
-            [`flags.${MODULE_ID}.${FLAGS.result}`]: (r.flags[LEGACY_MODULE_ID] as Record<string, unknown>)[
-              FLAGS.result
-            ],
-          }));
+            flags: (r.flags?.[LEGACY_MODULE_ID] as Record<string, unknown> | undefined)?.[FLAGS.result],
+          }))
+          .filter((r) => r.flags !== undefined && validateResultFlags(r.flags).ok)
+          .map((r) => ({ _id: r._id, [`flags.${MODULE_ID}.${FLAGS.result}`]: r.flags }));
         await table.update({ [`flags.${MODULE_ID}.${FLAGS.table}`]: legacy[FLAGS.table] });
         if (results.length) await table.updateEmbeddedDocuments("TableResult", results);
         changed++;

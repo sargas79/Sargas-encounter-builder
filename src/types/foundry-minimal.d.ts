@@ -234,7 +234,16 @@ declare global {
     };
     system: { id: string; version: string };
     version: string;
-    modules: { get(id: string): { active: boolean; version: string } | undefined };
+    modules: {
+      get(id: string):
+        | {
+            active: boolean;
+            version: string;
+            title?: string;
+            authors?: Iterable<{ name?: string; github?: string }>;
+          }
+        | undefined;
+    };
     pf2e?: {
       gm?: {
         calculateXP?: (

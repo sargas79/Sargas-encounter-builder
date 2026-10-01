@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { migratePartyProfileRecord, migrateRecipeRecord } from "../src/foundry/migrations.js";
+import {
+  legacyModuleIsForeign,
+  migratePartyProfileRecord,
+  migrateRecipeRecord,
+  pickLegacyJournalFlags,
+} from "../src/foundry/migrations.js";
 import { validatePartyProfile, validateRecipe } from "../src/core/schemas.js";
 
 describe("T18 (pure part): migrations stamp versions and preserve data", () => {
@@ -45,5 +50,50 @@ describe("T18 (pure part): migrations stamp versions and preserve data", () => {
       });
       expect(validation.value.evaluation).toBeNull();
     }
+  });
+});
+
+describe("0.2.1: legacy namespace copy ignores the unrelated pf2e-encounter-builder module", () => {
+  it("recognises our own 0.1.0 manifest and foreign ones", () => {
+    expect(legacyModuleIsForeign(undefined)).toBe(false);
+    expect(legacyModuleIsForeign({ title: "PF2e Encounter Builder", authors: [{ name: "sargas79" }] })).toBe(
+      false,
+    );
+    expect(legacyModuleIsForeign({ title: "Whatever", authors: [{ github: "sargas79" }] })).toBe(false);
+    expect(legacyModuleIsForeign({ title: "Other Builder", authors: [{ name: "someone" }] })).toBe(true);
+    expect(legacyModuleIsForeign({ title: "Something Else", authors: [] })).toBe(true);
+    expect(legacyModuleIsForeign({ title: "PF2e Encounter Builder" })).toBe(false);
+  });
+
+  it("copies only valid, missing flags and migrates recipes on the way", () => {
+    const legacy = {
+      dataJournal: true,
+      tags: { schemaVersion: 1, entries: [{ uuid: "Compendium.x.y", tags: ["family:goblin"] }] },
+      themes: { not: "a theme store" },
+      recipe: { name: "Old", entries: [{ uuid: "Compendium.x.y", quantity: 2 }] },
+    };
+    const update = pickLegacyJournalFlags(legacy, undefined);
+    expect(Object.keys(update).sort()).toEqual([
+      "flags.sargas-encounter-builder.dataJournal",
+      "flags.sargas-encounter-builder.recipe",
+      "flags.sargas-encounter-builder.tags",
+    ]);
+    const recipe = update["flags.sargas-encounter-builder.recipe"] as {
+      schemaVersion: number;
+      origin: string;
+    };
+    expect(recipe.schemaVersion).toBe(1);
+    expect(recipe.origin).toBe("manual");
+  });
+
+  it("never overwrites flags already present and drops a bare data-journal marker", () => {
+    expect(
+      pickLegacyJournalFlags(
+        { tags: { schemaVersion: 1, entries: [] } },
+        { tags: { schemaVersion: 1, entries: [] } },
+      ),
+    ).toEqual({});
+    expect(pickLegacyJournalFlags({ dataJournal: true, tags: "garbage" }, undefined)).toEqual({});
+    expect(pickLegacyJournalFlags({ foreign: { anything: 1 } }, undefined)).toEqual({});
   });
 });
