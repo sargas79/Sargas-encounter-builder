@@ -1,11 +1,10 @@
-<div class="peb-evaluation">
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.party"}}</label>{{snap.partyName}} ({{snap.partySize}})</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.levels"}}</label>{{snap.levels}}</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.reference"}}</label>{{snap.referenceLevel}}</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.evaluation.selected"}}</label>{{snap.threatLabel}}</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.evaluation.target"}}</label>{{#if (ne snap.target null)}}{{snap.target}} XP{{else}}—{{/if}}</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.evaluation.supported"}}</label>{{snap.supportedXP}} XP</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.evaluation.difference"}}</label>{{snap.differenceLabel}}</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.evaluation.inferred"}}</label>{{snap.inferredLabel}} ({{snap.completeLabel}})</div>
-  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.saved.when"}}</label>{{snap.when}}</div>
+<div class="seb-snapshot">
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.header.party"}}</span>{{snap.partyName}} ({{snap.partySize}})</span>
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.header.levels"}}</span>{{snap.levels}}</span>
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.header.referenceShort"}}</span>{{snap.referenceLevel}}</span>
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.evaluation.selected"}}</span>{{snap.threatLabel}}</span>
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.evaluation.target"}}</span>{{#if (ne snap.target null)}}{{snap.target}} XP{{else}}—{{/if}}</span>
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.evaluation.supported"}}</span>{{snap.supportedXP}} XP {{snap.differenceLabel}}</span>
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.evaluation.inferred"}}</span>{{snap.inferredLabel}} ({{snap.completeLabel}})</span>
+  <span><span class="seb-eyebrow">{{localize "sargas-encounter-builder.saved.when"}}</span>{{snap.when}}</span>
 </div>

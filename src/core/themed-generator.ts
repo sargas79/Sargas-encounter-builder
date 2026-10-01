@@ -65,6 +65,8 @@ export interface ThemedInput {
   rng?: Rng;
   /** How many themes to try in "auto" mode before giving up. */
   maxThemeAttempts?: number;
+  /** Themes never chosen in "auto" mode (used by "re-theme"). */
+  excludeThemeIds?: string[];
 }
 
 export interface ThemedSuccess extends GeneratorSuccess {
@@ -185,7 +187,10 @@ export function generateThemedEncounter(input: ThemedInput): ThemedResult {
   } else if (lockedThemed.length > 0 && inferThemeFromLocked(lockedThemed)) {
     themes = [inferThemeFromLocked(lockedThemed)!];
   } else {
-    const all = availableThemes(input.candidates, input.customThemes);
+    const excludedThemes = new Set(input.excludeThemeIds ?? []);
+    const all = availableThemes(input.candidates, input.customThemes).filter(
+      (th) => !excludedThemes.has(th.id),
+    );
     if (all.length === 0)
       return { ok: false, reason: "noThemes", detail: {}, theme: null, archetype, themesTried };
     // Weighted random order by pool size, bounded attempts.

@@ -1,13 +1,13 @@
 /**
  * EncounterBuilderApp: the GM workspace (ApplicationV2 + Handlebars parts).
  *
- * Tabs: Party, Build (manual / balanced), Tables, Saved, Deploy.
+ * Flow: the start dialog picks party, threat and mode; the header strip keeps them editable;
+ * Build, Tables and Deploy stay disabled until the party resolves to a valid reference level.
  * All write operations re-check `game.user.isGM`.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MODULE_ID } from "../constants.js";
-import { THREAT_LEVELS, tierBudget, type ThreatLevel, type ReferenceLevelPolicy } from "../core/budget.js";
-import { escapeHtml, splitList } from "../core/util.js";
+import { MODULE_ID, SETTINGS } from "../constants.js";
+import { THREAT_LEVELS, tierBudget, type ReferenceLevelPolicy, type ThreatLevel } from "../core/budget.js";
 import type { CatalogEntry, CatalogFilter } from "../core/catalog.js";
 import {
   addEntry,
@@ -22,6 +22,7 @@ import {
   type DraftEvaluation,
 } from "../core/draft.js";
 import type { RosterState } from "../core/party.js";
+import { escapeHtml, splitList } from "../core/util.js";
 import {
   ApplicationV2,
   DialogV2,
@@ -35,17 +36,19 @@ import {
 import { t } from "../foundry/i18n.js";
 import type { ResolvedParty } from "../foundry/party-service.js";
 import { services } from "../foundry/services.js";
-import { getSetting } from "../foundry/settings.js";
-import { SETTINGS } from "../constants.js";
-import { GeneratorPanel } from "./generator-panel.js";
+import { getSetting, setSetting } from "../foundry/settings.js";
 import { DeployPanel } from "./deploy-panel.js";
-import { TablesPanel } from "./tables-panel.js";
+import { GeneratorPanel } from "./generator-panel.js";
 import { SavedPanel } from "./saved-panel.js";
+import { showStartDialog, type StartChoice, type StartMode } from "./start-dialog.js";
+import { TablesPanel } from "./tables-panel.js";
 
 const TEMPLATES = `modules/${MODULE_ID}/templates/builder`;
 
-type TabId = "party" | "build" | "tables" | "saved" | "deploy";
+export type TabId = "party" | "build" | "tables" | "saved" | "deploy";
 const TABS: TabId[] = ["party", "build", "tables", "saved", "deploy"];
+const GATED_TABS: TabId[] = ["build", "tables", "deploy"];
+type BuildMode = "browse" | "generate";
 
 interface Message {
   level: "info" | "warn" | "error" | "ok";
@@ -60,6 +63,13 @@ export interface BuilderState {
   results: CatalogEntry[];
   busy: boolean;
   messages: Message[];
+  buildMode: BuildMode;
+}
+
+interface UiState {
+  lastParty?: string;
+  lastMode?: StartMode;
+  lastThreat?: ThreatLevel;
 }
 
 const Base = HandlebarsApplicationMixin()(ApplicationV2()) as any;
@@ -69,17 +79,21 @@ export class EncounterBuilderApp extends Base {
 
   static DEFAULT_OPTIONS = {
     id: MODULE_ID,
-    classes: [MODULE_ID],
+    classes: ["seb", "seb-builder"],
     tag: "div",
     window: { title: `${MODULE_ID}.app.title`, icon: "fa-solid fa-dragon", resizable: true },
-    position: { width: 1040, height: 760 },
+    position: { width: 1100, height: 780 },
     actions: {
       selectTab: EncounterBuilderApp.#onSelectTab,
+      changeParty: EncounterBuilderApp.#onChangeParty,
+      setThreat: EncounterBuilderApp.#onSetThreat,
+      setBuildMode: EncounterBuilderApp.#onSetBuildMode,
       // party
       createProfile: EncounterBuilderApp.#onCreateProfile,
       linkPartyActor: EncounterBuilderApp.#onLinkPartyActor,
       renameProfile: EncounterBuilderApp.#onRenameProfile,
       deleteProfile: EncounterBuilderApp.#onDeleteProfile,
+      selectProfile: EncounterBuilderApp.#onSelectProfile,
       toggleMember: EncounterBuilderApp.#onToggleMember,
       toggleCounts: EncounterBuilderApp.#onToggleCounts,
       removeMember: EncounterBuilderApp.#onRemoveMember,
@@ -93,7 +107,7 @@ export class EncounterBuilderApp extends Base {
       clearDraft: EncounterBuilderApp.#onClearDraft,
       refreshCatalog: EncounterBuilderApp.#onRefreshCatalog,
       editTags: EncounterBuilderApp.#onEditTags,
-      togglePack: EncounterBuilderApp.#onTogglePack,
+      setRarity: EncounterBuilderApp.#onSetRarity,
       ext: EncounterBuilderApp.#onExtensionAction,
       replaceEntry: EncounterBuilderApp.#onReplaceEntry,
     },
@@ -102,27 +116,28 @@ export class EncounterBuilderApp extends Base {
   static PARTS = {
     header: { template: `${TEMPLATES}/header.hbs` },
     tabs: { template: `${TEMPLATES}/tabs.hbs` },
-    party: { template: `${TEMPLATES}/party.hbs`, scrollable: [".peb-scroll"] },
-    build: { template: `${TEMPLATES}/build.hbs`, scrollable: [".peb-scroll"] },
-    tables: { template: `${TEMPLATES}/tables.hbs`, scrollable: [".peb-scroll"] },
-    saved: { template: `${TEMPLATES}/saved.hbs`, scrollable: [".peb-scroll"] },
-    deploy: { template: `${TEMPLATES}/deploy.hbs`, scrollable: [".peb-scroll"] },
+    party: { template: `${TEMPLATES}/party.hbs`, scrollable: [".seb-scroll"] },
+    build: { template: `${TEMPLATES}/build.hbs`, scrollable: [".seb-scroll"] },
+    tables: { template: `${TEMPLATES}/tables.hbs`, scrollable: [".seb-scroll"] },
+    saved: { template: `${TEMPLATES}/saved.hbs`, scrollable: [".seb-scroll"] },
+    deploy: { template: `${TEMPLATES}/deploy.hbs`, scrollable: [".seb-scroll"] },
+    footer: { template: `${TEMPLATES}/footer.hbs` },
   };
 
   state: BuilderState = {
     resolved: null,
     evaluation: null,
     draft: emptyDraft(),
-    filter: { relativeMin: -4, relativeMax: 4 },
+    filter: { relativeMin: -2, relativeMax: 2 },
     results: [],
     busy: false,
     messages: [],
+    buildMode: "generate",
   };
-  activeTab: TabId = "party";
+  activeTab: TabId = "build";
   #unsubscribe: (() => void)[] = [];
   #listenersAttached = false;
   #search = debounce(() => void this.#runSearch(), 250);
-  /** Extensions: generator, tables, saved, deploy. Each may provide prepareContext/onChange/onDrop. */
   extensions: Record<string, unknown> = {
     generator: new GeneratorPanel(this),
     deploy: new DeployPanel(this),
@@ -130,19 +145,120 @@ export class EncounterBuilderApp extends Base {
     saved: new SavedPanel(this),
   };
 
-  static async open(): Promise<EncounterBuilderApp | null> {
+  /** Open the workspace. With `withDialog`, run the start dialog first (the launcher does). */
+  static async open({
+    withDialog = true,
+  }: { withDialog?: boolean } = {}): Promise<EncounterBuilderApp | null> {
     if (!isGM()) {
       ui.notifications.warn(t("errors.gmOnly"));
       return null;
     }
     await ensurePartials();
-    EncounterBuilderApp.#instance ??= new EncounterBuilderApp();
-    await EncounterBuilderApp.#instance.render({ force: true });
-    return EncounterBuilderApp.#instance;
+    const existing = EncounterBuilderApp.#instance;
+    if (existing?.rendered && !withDialog) {
+      await existing.render({ force: true });
+      return existing;
+    }
+    const app = (EncounterBuilderApp.#instance ??= new EncounterBuilderApp());
+    if (withDialog) {
+      const choice = await app.runStartDialog();
+      if (!choice) return app.rendered ? app : null;
+    }
+    await app.render({ force: true });
+    return app;
   }
 
   static get instance(): EncounterBuilderApp | null {
     return EncounterBuilderApp.#instance;
+  }
+
+  /* -------------------------------------------- */
+  /*  Start dialog                                */
+  /* -------------------------------------------- */
+
+  async runStartDialog(): Promise<StartChoice | null> {
+    const { party, adapter } = services();
+    const ui = this.#uiState();
+    const active = party.activeProfile();
+    const initialParty =
+      ui.lastParty ??
+      (active
+        ? active.kind === "linked" && active.partyActorUuid
+          ? `actor:${active.partyActorUuid}`
+          : `profile:${active.id}`
+        : undefined);
+    const choice = await showStartDialog({
+      partyActors: adapter.listPartyActors(),
+      profiles: party.profiles(),
+      initial: {
+        party: initialParty,
+        threat: active?.selectedThreat ?? ui.lastThreat,
+        mode: ui.lastMode,
+        policy: active?.referencePolicy ?? undefined,
+        manualLevel: active?.manualReferenceLevel ?? null,
+      },
+    });
+    if (!choice) return null;
+    await this.applyStartChoice(choice);
+    return choice;
+  }
+
+  async applyStartChoice(choice: StartChoice): Promise<void> {
+    const { party, adapter } = services();
+    let profile = null as import("../core/schemas.js").PartyProfile | null;
+    if (choice.party.startsWith("actor:")) {
+      const uuid = choice.party.slice("actor:".length);
+      profile = party.profiles().find((p) => p.kind === "linked" && p.partyActorUuid === uuid) ?? null;
+      if (!profile) {
+        const actor = adapter.listPartyActors().find((a) => a.uuid === uuid);
+        profile = await party.createProfile(actor?.name ?? t("party.defaultName"), "linked", uuid);
+      }
+    } else if (choice.party.startsWith("profile:")) {
+      profile = party.getProfile(choice.party.slice("profile:".length));
+    }
+    if (!profile) profile = await party.createProfile(t("party.defaultName"), "standalone");
+    await party.updateProfile({
+      ...profile,
+      selectedThreat: choice.threat,
+      referencePolicy: choice.policy,
+      manualReferenceLevel: choice.manualLevel,
+    });
+    await party.setActive(profile.id);
+    await this.#saveUiState({ lastParty: choice.party, lastMode: choice.mode, lastThreat: choice.threat });
+    switch (choice.mode) {
+      case "manual":
+        this.activeTab = "build";
+        this.state.buildMode = "browse";
+        break;
+      case "random":
+        this.activeTab = "build";
+        this.state.buildMode = "generate";
+        break;
+      case "table":
+        this.activeTab = "tables";
+        break;
+      case "saved":
+        this.activeTab = "saved";
+        break;
+    }
+    if (profile.kind === "standalone" && profile.members.length === 0) this.activeTab = "party";
+    await this.refreshParty();
+  }
+
+  #uiState(): UiState {
+    try {
+      return (getSetting<UiState>(SETTINGS.uiState) ?? {}) as UiState;
+    } catch {
+      return {};
+    }
+  }
+
+  async #saveUiState(patch: UiState): Promise<void> {
+    try {
+      await setSetting(SETTINGS.uiState, { ...this.#uiState(), ...patch });
+    } catch {
+      /* client setting unavailable in tests */
+    }
   }
 
   /* -------------------------------------------- */
@@ -157,7 +273,9 @@ export class EncounterBuilderApp extends Base {
       party.onChange(rerender),
       catalog.onChange(() => void this.render({ parts: ["build"] })),
     );
+    await catalog.ensureDefaultSelection();
     await this.refreshParty();
+    void this.#runSearch();
   }
 
   _onClose(options: Record<string, unknown>): void {
@@ -175,27 +293,24 @@ export class EncounterBuilderApp extends Base {
     if (!this.#listenersAttached) {
       root.addEventListener("change", (event) => void this.#onChange(event));
       root.addEventListener("input", (event) => this.#onInput(event));
+      root.addEventListener("keydown", (event) => this.#onKeydown(event));
       this.#listenersAttached = true;
     }
-    // Drag & drop (actors onto party roster / build list).
     const DragDrop = DragDropClass();
     if (DragDrop) {
       new DragDrop({
-        dropSelector: ".peb-dropzone",
+        dropSelector: ".seb-dropzone",
         permissions: { dragstart: () => false, drop: () => isGM() },
         callbacks: { drop: (event: DragEvent) => void this.#onDrop(event) },
       }).bind(root);
     }
-    for (const el of root.querySelectorAll<HTMLElement>(".peb-dropzone")) {
-      el.addEventListener("dragenter", () => el.classList.add("dragover"));
-      el.addEventListener("dragleave", () => el.classList.remove("dragover"));
-      el.addEventListener("drop", () => el.classList.remove("dragover"));
+    for (const el of root.querySelectorAll<HTMLElement>(".seb-dropzone")) {
+      el.addEventListener("dragenter", () => el.classList.add("is-over"));
+      el.addEventListener("dragleave", () => el.classList.remove("is-over"));
+      el.addEventListener("drop", () => el.classList.remove("is-over"));
     }
-    for (const section of root.querySelectorAll<HTMLElement>("section.tab")) {
-      section.classList.toggle("active", section.dataset.tab === this.activeTab);
-    }
-    for (const a of root.querySelectorAll<HTMLElement>("nav.tabs [data-tab]")) {
-      a.classList.toggle("active", a.dataset.tab === this.activeTab);
+    for (const section of root.querySelectorAll<HTMLElement>("section.seb-tab")) {
+      section.classList.toggle("is-active", section.dataset.tab === this.activeTab);
     }
   }
 
@@ -203,17 +318,23 @@ export class EncounterBuilderApp extends Base {
   /*  Data refresh                                */
   /* -------------------------------------------- */
 
+  get ready(): boolean {
+    const roster = this.state.resolved?.roster;
+    return !!roster && roster.blockers.length === 0 && roster.reference.level !== null;
+  }
+
   async refreshParty(): Promise<void> {
     const { party } = services();
     this.state.resolved = await party.resolveActive();
     this.recomputeEvaluation();
-    await this.render({ parts: ["header", "party", "build", "deploy"] });
+    if (!this.ready && GATED_TABS.includes(this.activeTab)) this.activeTab = "party";
+    await this.render({ parts: ["header", "tabs", "party", "build", "deploy", "footer"] });
   }
 
   recomputeEvaluation(): void {
     const resolved = this.state.resolved;
     const roster = resolved?.roster;
-    if (!resolved || !roster || roster.blockers.length > 0 || roster.reference.level === null) {
+    if (!resolved || !roster || !this.ready) {
       this.state.evaluation = null;
       return;
     }
@@ -221,7 +342,7 @@ export class EncounterBuilderApp extends Base {
     const variant = adapter.variantInfo();
     this.state.evaluation = evaluateDraft(this.state.draft, {
       partySize: roster.partySize,
-      referenceLevel: roster.reference.level,
+      referenceLevel: roster.reference.level!,
       selectedThreat: resolved.profile.selectedThreat,
       pwol: variant.pwol,
       pwolCreatureXP: (ref, lvl) => adapter.pwolCreatureXP(ref, lvl),
@@ -230,7 +351,6 @@ export class EncounterBuilderApp extends Base {
     Hooks.callAll(`${MODULE_ID}.evaluationChanged`, this.state.evaluation);
   }
 
-  /** Debug-mode cross-check against the PF2e system helper (standard rules, all creatures in range). */
   #crossCheck(): void {
     const evaluation = this.state.evaluation;
     if (
@@ -261,7 +381,7 @@ export class EncounterBuilderApp extends Base {
   }
 
   pushMessage(level: Message["level"], text: string): void {
-    this.state.messages = [...this.state.messages.slice(-4), { level, text }];
+    this.state.messages = [...this.state.messages.slice(-2), { level, text }];
   }
 
   async #runSearch(): Promise<void> {
@@ -289,34 +409,21 @@ export class EncounterBuilderApp extends Base {
     const resolved = this.state.resolved;
     const roster = resolved?.roster ?? null;
     const evaluation = this.state.evaluation;
-    const variant = adapter.variantInfo();
+    const ready = this.ready;
 
-    const tabs = TABS.map((id) => ({ id, label: t(`tabs.${id}`), active: id === this.activeTab }));
-    const threatOptions = THREAT_LEVELS.map((threat) => {
-      const tier = roster ? budgetFor(threat, roster) : null;
-      return {
-        value: threat,
-        label:
-          t(`threat.${threat}`) +
-          (tier ? ` (${tier.available ? tier.target : t("party.unavailable")} XP)` : ""),
-        selected: resolved?.profile.selectedThreat === threat,
-        disabled: tier ? !tier.available : false,
-      };
-    });
-
-    const policies: { value: ReferenceLevelPolicy; label: string; selected: boolean }[] = (
-      ["averageFloor", "highest", "lowest", "manual"] as ReferenceLevelPolicy[]
-    ).map((value) => ({
-      value,
-      label: t(`party.policy.${value}`),
-      selected: resolved?.profile.referencePolicy === value,
+    const tabs = TABS.map((id) => ({
+      id,
+      label: t(`tabs.${id}`),
+      icon: TAB_ICONS[id],
+      active: id === this.activeTab,
+      disabled: GATED_TABS.includes(id) && !ready,
+      tooltip: GATED_TABS.includes(id) && !ready ? t("gate.tooltip") : "",
     }));
 
     const selectedPacks = new Set(catalog.selectedPackIds());
     const packs = catalog.availablePacks().map((p) => ({
       ...p,
       selected: selectedPacks.has(p.id),
-      state: catalog.packState(p.id),
       stateLabel: describePackState(catalog.packState(p.id)),
     }));
 
@@ -325,29 +432,50 @@ export class EncounterBuilderApp extends Base {
       tabs,
       activeTab: this.activeTab,
       isGM: isGM(),
+      ready,
       busy: this.state.busy,
       messages: this.state.messages,
-      header: this.#headerContext(resolved, evaluation, variant.pwol),
+      header: this.#headerContext(resolved, evaluation, adapter.variantInfo().pwol),
+      gate: {
+        title: t("gate.title"),
+        hint: roster
+          ? roster.blockers.map((code) => t(`party.blockers.${code}`)).join(" ")
+          : t("gate.noParty"),
+      },
       party: {
-        profiles: party.profiles().map((p) => ({ ...p, selected: p.id === resolved?.profile.id })),
+        profiles: party.profiles().map((p) => ({
+          ...p,
+          selected: p.id === resolved?.profile.id,
+          kindLabel: t(`party.kind.${p.kind}`),
+          count: p.members.length,
+        })),
         profile: resolved?.profile ?? null,
         isLinked: resolved?.profile.kind === "linked",
         partyActors: adapter.listPartyActors(),
         roster: roster ? this.#rosterContext(roster) : null,
-        policies,
+        policies: (["averageFloor", "highest", "lowest", "manual"] as ReferenceLevelPolicy[]).map(
+          (value) => ({
+            value,
+            label: t(`party.policy.${value}`),
+            selected: resolved?.profile.referencePolicy === value,
+          }),
+        ),
         showPolicy: !!roster && roster.reference.distinctLevels.length > 1,
         manualLevel: resolved?.profile.manualReferenceLevel ?? "",
         isManual: resolved?.profile.referencePolicy === "manual",
-        threatOptions,
         blockers: roster?.blockers.map((code) => t(`party.blockers.${code}`)) ?? [],
       },
       build: {
+        mode: this.state.buildMode,
+        isBrowse: this.state.buildMode === "browse",
+        isGenerate: this.state.buildMode === "generate",
         filter: this.state.filter,
         results: this.state.results.map((entry) => ({
           ...entry,
-          relative: roster?.reference.level != null ? entry.level - roster.reference.level : null,
-          traitsLabel: entry.traits.join(", "),
-          tagsLabel: entry.tags.join(", "),
+          relative: roster?.reference.level != null ? signed(entry.level - roster.reference.level) : "",
+          traitsShort: entry.traits.slice(0, 4),
+          moreTraits: Math.max(0, entry.traits.length - 4),
+          rarityClass: entry.rarity !== "common" ? `is-${entry.rarity}` : "",
         })),
         resultCount: this.state.results.length,
         draft: this.state.draft.entries.map((entry) => {
@@ -357,18 +485,32 @@ export class EncounterBuilderApp extends Base {
             xpEach: ev?.xpEach ?? null,
             subtotal: ev?.subtotal ?? null,
             status: ev?.status ?? "supported",
-            relative: ev?.relativeLevel ?? null,
+            relative: ev ? signed(ev.relativeLevel) : "",
             statusLabel: ev && ev.status !== "supported" ? t(`evaluation.status.${ev.status}`) : "",
           };
         }),
         draftCount: totalCreatures(this.state.draft),
-        evaluation: evaluation ? this.#evaluationContext(evaluation) : null,
+        hasDraft: this.state.draft.entries.length > 0,
+        originLabel: t(`saved.origin.${this.state.draft.origin}`),
+        meter: evaluation ? meterContext(evaluation) : null,
         packs,
+        packCount: selectedPacks.size,
         missingPacks: catalog.missingSelectedPackIds(),
         noPacks: selectedPacks.size === 0,
         traits: this.state.filter.traits?.join(", ") ?? "",
         tags: this.state.filter.tags?.join(", ") ?? "",
+        rarity: this.state.filter.rarities?.[0] ?? "",
+        rarities: ["", "common", "uncommon", "rare", "unique"].map((value) => ({
+          value,
+          label: value ? t(`rarity.${value}`) : t("build.anyRarity"),
+          active: (this.state.filter.rarities?.[0] ?? "") === value,
+        })),
         allTags: services().tags.allTags(),
+      },
+      footer: {
+        packCount: selectedPacks.size,
+        catalogCount: catalog.entries().length,
+        version: game.modules.get(MODULE_ID)?.version ?? "",
       },
       ...(await this.#extensionContext()),
     };
@@ -390,23 +532,32 @@ export class EncounterBuilderApp extends Base {
   ): Record<string, unknown> {
     const roster = resolved?.roster ?? null;
     const ref = roster?.reference;
+    const threats = THREAT_LEVELS.map((threat) => {
+      const tier = roster && roster.partySize > 0 ? tierBudget(threat, roster.partySize) : null;
+      return {
+        value: threat,
+        label: t(`threat.${threat}`),
+        target: tier ? (tier.available ? `${tier.target} XP` : t("party.unavailable")) : "",
+        active: resolved?.profile.selectedThreat === threat,
+        disabled: tier ? !tier.available : false,
+      };
+    });
     return {
+      hasParty: !!resolved,
       partyName: resolved?.profile.name ?? t("party.none"),
-      source: resolved ? t(`party.kind.${resolved.profile.kind}`) : "",
-      participating: roster ? roster.partySize : 0,
-      levels: roster ? roster.counted.map((m) => m.level).join(", ") || "—" : "—",
+      sourceLabel: resolved ? t(`party.kind.${resolved.profile.kind}`) : "",
+      participating: roster?.partySize ?? 0,
+      levels: roster ? roster.counted.map((m) => m.level).join(" · ") || "—" : "—",
       referenceLevel: ref?.level ?? "—",
-      policy: ref?.policy ? t(`party.policy.${ref.policy}`) : t("party.policy.none"),
+      policy: ref?.policy ? t(`party.policy.${ref.policy}`) : "",
       isEstimate: !!ref?.isEstimate,
-      threat: resolved ? t(`threat.${resolved.profile.selectedThreat}`) : "—",
-      target: evaluation?.tier
-        ? evaluation.tier.available
-          ? evaluation.tier.target
-          : t("party.unavailable")
-        : "—",
+      threats,
+      target: evaluation?.tier ? (evaluation.tier.available ? evaluation.tier.target : null) : null,
       pwol,
       variantUnsupported: evaluation?.variantUnsupported ?? false,
       systemCalculation: evaluation?.systemCalculation ?? false,
+      blockers: roster?.blockers.map((code) => t(`party.blockers.${code}`)) ?? [],
+      missing: roster?.missing.length ?? 0,
     };
   }
 
@@ -415,50 +566,23 @@ export class EncounterBuilderApp extends Base {
       members: roster.members.map((m) => ({
         ...m,
         statusLabel: t(`party.status.${m.reason}`),
-        cssClass:
+        rowClass:
           m.status === "inactive"
-            ? "inactive"
+            ? "is-inactive"
             : m.status === "missing"
-              ? "missing"
+              ? "is-missing"
               : m.status === "notCounted"
-                ? "not-counted"
+                ? "is-muted"
                 : "",
+        counted: m.status === "counted" || m.status === "overrideCounted",
         canToggleCounts: m.type === "npc" && m.status !== "missing",
         level: m.level ?? "?",
+        typeLabel:
+          t(`actorType.${m.type}`) === `${MODULE_ID}.actorType.${m.type}` ? m.type : t(`actorType.${m.type}`),
       })),
       partySize: roster.partySize,
       distinctLevels: roster.reference.distinctLevels.join(", "),
       missingCount: roster.missing.length,
-    };
-  }
-
-  #evaluationContext(evaluation: DraftEvaluation): Record<string, unknown> {
-    const inferred = evaluation.inferred;
-    let inferredLabel =
-      inferred.label === "beyondExtreme" ? t("evaluation.beyondExtreme") : t(`threat.${inferred.label}`);
-    if (inferred.unquantified) inferredLabel += ` ${t("evaluation.unquantified")}`;
-    if (inferred.incompleteNegligible) inferredLabel += ` ${t("evaluation.incompleteNegligible")}`;
-    return {
-      supportedXP: evaluation.supportedXP,
-      target: evaluation.tier?.available ? evaluation.tier.target : null,
-      difference: evaluation.difference,
-      differenceLabel:
-        evaluation.difference === null
-          ? "—"
-          : evaluation.difference > 0
-            ? `+${evaluation.difference}`
-            : String(evaluation.difference),
-      complete: evaluation.complete,
-      completeLabel: evaluation.complete ? t("evaluation.complete") : t("evaluation.incomplete"),
-      inferredLabel,
-      selectedLabel: evaluation.selectedThreat ? t(`threat.${evaluation.selectedThreat}`) : "—",
-      creatureCount: evaluation.creatureCount,
-      warnings: evaluation.warnings.map((w) => ({
-        level: warningLevel(w.code),
-        text: t(`evaluation.warnings.${w.code}`, w.data),
-      })),
-      systemCalculation: evaluation.systemCalculation,
-      variantUnsupported: evaluation.variantUnsupported,
     };
   }
 
@@ -474,6 +598,17 @@ export class EncounterBuilderApp extends Base {
     }
   }
 
+  #onKeydown(event: KeyboardEvent): void {
+    const target = event.target as HTMLInputElement;
+    if (event.key === "Enter" && target?.name === "filter.search") {
+      const first = this.state.results[0];
+      if (first) {
+        this.setDraft(addEntry(this.state.draft, entryFromCatalog(first)));
+        void this.render({ parts: ["build", "deploy", "footer"] });
+      }
+    }
+  }
+
   async #onChange(event: Event): Promise<void> {
     const target = event.target as HTMLInputElement | HTMLSelectElement;
     if (!target?.name || !isGM()) return;
@@ -483,9 +618,6 @@ export class EncounterBuilderApp extends Base {
     switch (target.name) {
       case "activeProfile":
         await party.setActive(value);
-        return;
-      case "threat":
-        if (profile) await party.setThreat(profile.id, value as ThreatLevel);
         return;
       case "referencePolicy":
         if (profile)
@@ -502,7 +634,7 @@ export class EncounterBuilderApp extends Base {
         const uuid = (target.closest("[data-uuid]") as HTMLElement | null)?.dataset.uuid;
         if (uuid) {
           this.setDraft(setQuantity(this.state.draft, uuid, Number.parseInt(value, 10)));
-          await this.render({ parts: ["build", "deploy"] });
+          await this.render({ parts: ["build", "deploy", "footer"] });
         }
         return;
       }
@@ -522,10 +654,6 @@ export class EncounterBuilderApp extends Base {
         return;
       case "filter.tags":
         this.state.filter.tags = splitList(value);
-        this.#search();
-        return;
-      case "filter.rarity":
-        this.state.filter.rarities = value ? [value] : [];
         this.#search();
         return;
       case "pack": {
@@ -554,29 +682,26 @@ export class EncounterBuilderApp extends Base {
   async #onDrop(event: DragEvent): Promise<void> {
     if (!isGM()) return;
     const data = getDragEventData(event);
-    const zone = (event.target as HTMLElement).closest<HTMLElement>(".peb-dropzone");
+    const zone = (event.target as HTMLElement).closest<HTMLElement>(".seb-dropzone");
     const purpose = zone?.dataset.purpose;
     const isActor = data?.type === "Actor" && typeof data.uuid === "string";
     if (purpose === "party" || purpose === "draft") {
       if (!isActor) {
         this.pushMessage("warn", t("messages.dropNotActor"));
-        await this.render({ parts: ["party", "build"] });
+        await this.render({ parts: ["header"] });
         return;
       }
       if (purpose === "party") await this.#addPartyMember(data.uuid);
       else await this.#addDraftFromUuid(data.uuid);
-    } else {
-      for (const ext of Object.values(this.extensions)) {
-        const fn = (
-          ext as {
-            onDrop?: (
-              purpose: string | undefined,
-              data: Record<string, unknown>,
-            ) => Promise<boolean> | boolean;
-          }
-        ).onDrop;
-        if (fn && (await fn.call(ext, purpose, data))) return;
-      }
+      return;
+    }
+    for (const ext of Object.values(this.extensions)) {
+      const fn = (
+        ext as {
+          onDrop?: (purpose: string | undefined, data: Record<string, unknown>) => Promise<boolean> | boolean;
+        }
+      ).onDrop;
+      if (fn && (await fn.call(ext, purpose, data))) return;
     }
   }
 
@@ -585,27 +710,25 @@ export class EncounterBuilderApp extends Base {
     const profile = this.state.resolved?.profile;
     if (!profile) {
       this.pushMessage("warn", t("party.noProfile"));
-      await this.render({ parts: ["party"] });
+      await this.render({ parts: ["header"] });
       return;
     }
     const result = await party.addMember(profile.id, uuid);
     if (!result.ok) {
       this.pushMessage("warn", t(`party.reject.${result.reason}`));
-      await this.render({ parts: ["party"] });
+      await this.render({ parts: ["header"] });
     }
   }
 
   async #addDraftFromUuid(uuid: string): Promise<void> {
     const { catalog } = services();
     const entry = await catalog.locate(uuid);
-    if (entry) {
-      this.setDraft(addEntry(this.state.draft, entryFromCatalog(entry)));
-    } else {
-      // A world NPC or an actor outside any indexed pack: summarize it without importing anything.
+    if (entry) this.setDraft(addEntry(this.state.draft, entryFromCatalog(entry)));
+    else {
       const doc = (await fromUuid(uuid)) as ActorDocument | null;
       if (!doc || doc.type !== "npc" || typeof doc.level !== "number") {
         this.pushMessage("warn", t("messages.dropNotNpc"));
-        await this.render({ parts: ["build"] });
+        await this.render({ parts: ["header"] });
         return;
       }
       this.setDraft(
@@ -621,14 +744,13 @@ export class EncounterBuilderApp extends Base {
         }),
       );
     }
-    await this.render({ parts: ["build", "deploy"] });
+    await this.render({ parts: ["build", "deploy", "footer"] });
   }
 
   /* -------------------------------------------- */
   /*  Actions                                     */
   /* -------------------------------------------- */
 
-  /** Generic dispatcher: data-ext="<extension>" data-method="<method>" [data-uuid]. */
   static async #onExtensionAction(
     this: EncounterBuilderApp,
     _event: Event,
@@ -660,8 +782,33 @@ export class EncounterBuilderApp extends Base {
   static async #onSelectTab(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
     const tab = target.dataset.tab as TabId | undefined;
     if (!tab || !TABS.includes(tab)) return;
+    if (GATED_TABS.includes(tab) && !this.ready) {
+      this.pushMessage("warn", t("gate.tooltip"));
+      await this.render({ parts: ["header"] });
+      return;
+    }
     this.activeTab = tab;
     await this.render({ parts: ["tabs", tab] });
+  }
+
+  static async #onChangeParty(this: EncounterBuilderApp): Promise<void> {
+    await this.runStartDialog();
+  }
+
+  static async #onSetThreat(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
+    const threat = target.dataset.value as ThreatLevel | undefined;
+    const profile = this.state.resolved?.profile;
+    if (!threat || !profile || !THREAT_LEVELS.includes(threat)) return;
+    await services().party.setThreat(profile.id, threat);
+    await this.#saveUiState({ lastThreat: threat });
+  }
+
+  static async #onSetBuildMode(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
+    const mode = target.dataset.value as BuildMode | undefined;
+    if (mode !== "browse" && mode !== "generate") return;
+    this.state.buildMode = mode;
+    await this.#saveUiState({ lastMode: mode === "browse" ? "manual" : "random" });
+    await this.render({ parts: ["build"] });
   }
 
   static async #onCreateProfile(this: EncounterBuilderApp): Promise<void> {
@@ -681,15 +828,28 @@ export class EncounterBuilderApp extends Base {
     target: HTMLElement,
   ): Promise<void> {
     if (!isGM()) return;
-    const select = (this.element as HTMLElement).querySelector<HTMLSelectElement>(
-      "select[name='partyActorUuid']",
-    );
-    const uuid = target.dataset.uuid ?? select?.value;
+    const uuid = target.dataset.uuid;
     if (!uuid) return;
+    const existing = services()
+      .party.profiles()
+      .find((p) => p.kind === "linked" && p.partyActorUuid === uuid);
+    if (existing) {
+      await services().party.setActive(existing.id);
+      return;
+    }
     const actor = services()
       .adapter.listPartyActors()
       .find((p) => p.uuid === uuid);
     await services().party.createProfile(actor?.name ?? t("party.defaultName"), "linked", uuid);
+  }
+
+  static async #onSelectProfile(
+    this: EncounterBuilderApp,
+    _event: Event,
+    target: HTMLElement,
+  ): Promise<void> {
+    const id = target.dataset.id;
+    if (id) await services().party.setActive(id);
   }
 
   static async #onRenameProfile(this: EncounterBuilderApp): Promise<void> {
@@ -702,10 +862,11 @@ export class EncounterBuilderApp extends Base {
   static async #onDeleteProfile(this: EncounterBuilderApp): Promise<void> {
     const profile = this.state.resolved?.profile;
     if (!profile || !isGM()) return;
-    const ok = await DialogV2().confirm({
-      window: { title: t("party.deleteTitle") },
-      content: `<p>${t("party.deleteConfirm", { name: profile.name })}</p>`,
-    });
+    const ok = await confirm(
+      t("party.deleteTitle"),
+      t("party.deleteConfirm", { name: escapeHtml(profile.name) }),
+      "fa-solid fa-trash",
+    );
     if (ok) await services().party.deleteProfile(profile.id);
   }
 
@@ -753,7 +914,7 @@ export class EncounterBuilderApp extends Base {
     const entry = this.state.results.find((e) => e.uuid === uuid) ?? services().catalog.get(uuid);
     if (!entry) return;
     this.setDraft(addEntry(this.state.draft, entryFromCatalog(entry)));
-    await this.render({ parts: ["build", "deploy"] });
+    await this.render({ parts: ["build", "deploy", "footer"] });
   }
 
   static async #onInspectCreature(
@@ -763,11 +924,10 @@ export class EncounterBuilderApp extends Base {
   ): Promise<void> {
     const uuid = target.closest<HTMLElement>("[data-uuid]")?.dataset.uuid;
     if (!uuid) return;
-    // Explicit full-document load; the sheet is read-only for compendium sources.
     const doc = await services().catalog.loadDocument(uuid);
     if (!doc) {
       this.pushMessage("warn", t("messages.sourceMissing", { uuid }));
-      await this.render({ parts: ["build"] });
+      await this.render({ parts: ["header"] });
       return;
     }
     doc.sheet?.render(true);
@@ -781,7 +941,7 @@ export class EncounterBuilderApp extends Base {
     const uuid = target.closest<HTMLElement>("[data-uuid]")?.dataset.uuid;
     if (!uuid) return;
     this.setDraft(removeEntry(this.state.draft, uuid));
-    await this.render({ parts: ["build", "deploy"] });
+    await this.render({ parts: ["build", "deploy", "footer"] });
   }
 
   static async #onLockCreature(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
@@ -793,7 +953,7 @@ export class EncounterBuilderApp extends Base {
 
   static async #onClearDraft(this: EncounterBuilderApp): Promise<void> {
     this.setDraft(emptyDraft());
-    await this.render({ parts: ["build", "deploy"] });
+    await this.render({ parts: ["build", "deploy", "footer"] });
   }
 
   static async #onRefreshCatalog(this: EncounterBuilderApp): Promise<void> {
@@ -801,6 +961,7 @@ export class EncounterBuilderApp extends Base {
     await this.render({ parts: ["build"] });
     try {
       services().tags.invalidate();
+      services().themes.invalidate();
       await services().catalog.refresh();
       services().catalog.retag();
     } finally {
@@ -809,9 +970,10 @@ export class EncounterBuilderApp extends Base {
     await this.#runSearch();
   }
 
-  static async #onTogglePack(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
-    const details = target.closest<HTMLElement>(".peb-packs");
-    details?.classList.toggle("collapsed");
+  static async #onSetRarity(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
+    const value = target.dataset.value ?? "";
+    this.state.filter.rarities = value ? [value] : [];
+    this.#search();
   }
 
   static async #onEditTags(this: EncounterBuilderApp, _event: Event, target: HTMLElement): Promise<void> {
@@ -832,27 +994,87 @@ export class EncounterBuilderApp extends Base {
 /*  Helpers                                     */
 /* -------------------------------------------- */
 
-/** Partials referenced from the part templates; loaded once. */
+const TAB_ICONS: Record<TabId, string> = {
+  party: "fa-solid fa-users",
+  build: "fa-solid fa-hammer",
+  tables: "fa-solid fa-table-list",
+  saved: "fa-solid fa-folder-open",
+  deploy: "fa-solid fa-chess-knight",
+};
+
 export const PARTIALS = [
-  `${TEMPLATES}/build-actions.hbs`,
   `${TEMPLATES}/generator.hbs`,
-  `${TEMPLATES}/evaluation.hbs`,
+  `${TEMPLATES}/meter.hbs`,
   `${TEMPLATES}/snapshot.hbs`,
+  `${TEMPLATES}/creature-row.hbs`,
 ];
 let partialsLoaded = false;
 export async function ensurePartials(): Promise<void> {
   if (partialsLoaded) return;
-  await loadTemplates(PARTIALS);
+  await loadTemplates([...PARTIALS, `modules/${MODULE_ID}/templates/start-dialog.hbs`]);
   partialsLoaded = true;
 }
 
-function budgetFor(threat: ThreatLevel, roster: RosterState) {
-  return roster.partySize > 0 ? tierBudget(threat, roster.partySize) : null;
+function signed(n: number): string {
+  return n > 0 ? `+${n}` : String(n);
 }
 
-function warningLevel(code: string): Message["level"] {
-  if (code === "overBudget" || code.startsWith("incomplete") || code === "threatUnavailable") return "warn";
-  return "info";
+/** Context for the threat meter: five tiers with the target tick and the actual marker. */
+export function meterContext(evaluation: DraftEvaluation): Record<string, unknown> {
+  const { tierBudget: tb } = { tierBudget };
+  const extreme = tb("extreme", evaluation.partySize).target;
+  const scaleMax = Math.max(extreme * 1.15, evaluation.supportedXP * 1.05, 1);
+  const pct = (xp: number) => Math.min(100, Math.max(0, (xp / scaleMax) * 100));
+  const tiers = THREAT_LEVELS.map((threat) => {
+    const tier = tb(threat, evaluation.partySize);
+    return {
+      threat,
+      label: t(`threat.${threat}`),
+      target: tier.target,
+      available: tier.available,
+      left: pct(tier.target),
+      selected: evaluation.selectedThreat === threat,
+    };
+  });
+  const inferred = evaluation.inferred;
+  let inferredLabel =
+    inferred.label === "beyondExtreme" ? t("evaluation.beyondExtreme") : t(`threat.${inferred.label}`);
+  if (inferred.unquantified) inferredLabel += ` ${t("evaluation.unquantified")}`;
+  const over = evaluation.difference !== null && evaluation.difference > 0;
+  return {
+    tiers,
+    fill: pct(evaluation.supportedXP),
+    supportedXP: evaluation.supportedXP,
+    target: evaluation.tier?.available ? evaluation.tier.target : null,
+    targetLeft: evaluation.tier?.available ? pct(evaluation.tier.target) : null,
+    difference: evaluation.difference,
+    differenceLabel:
+      evaluation.difference === null
+        ? ""
+        : evaluation.difference > 0
+          ? `+${evaluation.difference}`
+          : String(evaluation.difference),
+    over,
+    complete: evaluation.complete,
+    inferredLabel,
+    selectedLabel: evaluation.selectedThreat ? t(`threat.${evaluation.selectedThreat}`) : "—",
+    creatureCount: evaluation.creatureCount,
+    warnings: evaluation.warnings
+      .filter((w) => w.code !== "underBudget")
+      .map((w) => ({
+        level: w.code === "overBudget" || w.code.startsWith("incomplete") ? "warn" : "info",
+        text: t(`evaluation.warnings.${w.code}`, w.data),
+      })),
+    systemCalculation: evaluation.systemCalculation,
+    variantUnsupported: evaluation.variantUnsupported,
+    stateClass: inferred.unquantified
+      ? "is-unquantified"
+      : over
+        ? "is-over"
+        : evaluation.difference === 0
+          ? "is-exact"
+          : "",
+  };
 }
 
 function describePackState(
@@ -871,10 +1093,26 @@ function describePackState(
   }
 }
 
+export async function confirm(
+  title: string,
+  html: string,
+  icon = "fa-solid fa-triangle-exclamation",
+): Promise<boolean> {
+  const ok = await DialogV2().confirm({
+    window: { title, icon },
+    classes: ["seb-dialog"],
+    content: `<p>${html}</p>`,
+    modal: true,
+    rejectClose: false,
+  });
+  return ok === true;
+}
+
 export async function promptText(title: string, label: string, initial = ""): Promise<string | null> {
   const result = await DialogV2().prompt({
     window: { title },
-    content: `<div class="form-group"><label>${label}</label><input type="text" name="value" value="${escapeHtml(initial)}" autofocus></div>`,
+    classes: ["seb-dialog"],
+    content: `<div class="seb-field"><label>${escapeHtml(label)}</label><input type="text" name="value" value="${escapeHtml(initial)}" autofocus></div>`,
     ok: {
       callback: (_event: Event, button: HTMLButtonElement) =>
         (button.form?.elements.namedItem("value") as HTMLInputElement | null)?.value ?? "",
@@ -889,13 +1127,17 @@ export async function promptSelect(
   label: string,
   options: { uuid: string; name: string }[],
 ): Promise<string | null> {
-  if (options.length === 0) return null;
+  if (options.length === 0) {
+    ui.notifications.warn(t("party.noCandidates"));
+    return null;
+  }
   const opts = options
     .map((o) => `<option value="${escapeHtml(o.uuid)}">${escapeHtml(o.name)}</option>`)
     .join("");
   const result = await DialogV2().prompt({
     window: { title },
-    content: `<div class="form-group"><label>${label}</label><select name="value">${opts}</select></div>`,
+    classes: ["seb-dialog"],
+    content: `<div class="seb-field"><label>${escapeHtml(label)}</label><select name="value">${opts}</select></div>`,
     ok: {
       callback: (_event: Event, button: HTMLButtonElement) =>
         (button.form?.elements.namedItem("value") as HTMLSelectElement | null)?.value ?? "",

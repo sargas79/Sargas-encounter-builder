@@ -108,6 +108,16 @@ Recorded on 2026-10-01 in the build container (Node 22.22.0, no Foundry):
 
 `module.json` therefore declares `compatibility.minimum: "13"`, `maximum: "14"`, and no `verified`.
 
+## 6b. 0.2.0 update
+
+- The maintainer's other modules (`wondrous-spellbook`, `sargas-investigation-board`, `victory-counter-v13`)
+  are verified on Foundry 14.366–14.368 with PF2e 8.5.1, so `module.json` now declares Foundry 14 and PF2e
+  8.0.0 minimums. The PF2e data paths in §2 were verified against 7.9.1 source; PF2e 8 keeps the item paths
+  those modules use (`system.level.value`, `system.traits.value`, `system.traits.rarity`), and the NPC paths
+  are checked at runtime by the Quench "system integration" batch.
+- Build-environment results for 0.2.0: 148 Vitest tests passing; lint, typecheck and build clean. Quench and
+  the manual matrix (including M29–M39) remain to be run.
+
 ## 7. Foundry v14-specific risks to verify first
 
 The code was written against the v13 API surface. On v14 check these before anything else:

@@ -101,6 +101,21 @@ export class CreatureCatalog {
     return this.selectedPacksStore.get().filter((id) => !available.has(id));
   }
 
+  /**
+   * First run: select every accessible Actor pack shipped by the PF2e system (bestiaries), or all
+   * accessible Actor packs when none come from the system. Does nothing once a selection exists.
+   */
+  async ensureDefaultSelection(): Promise<boolean> {
+    if (this.selectedPacksStore.get().length > 0) return false;
+    const accessible = this.availablePacks().filter((p) => p.accessible);
+    const system = accessible.filter((p) => p.packageName === "pf2e");
+    const chosen = (system.length ? system : accessible).map((p) => p.id);
+    if (chosen.length === 0) return false;
+    await this.selectedPacksStore.set(chosen);
+    this.#emit();
+    return true;
+  }
+
   async setSelectedPacks(ids: string[]): Promise<void> {
     await this.selectedPacksStore.set([...new Set(ids)]);
     this.#emit();

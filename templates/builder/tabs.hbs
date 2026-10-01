@@ -1,5 +1,7 @@
-<nav class="tabs" data-group="primary">
+<nav class="seb-tabs" role="tablist">
   {{#each tabs}}
-  <a class="item {{#if this.active}}active{{/if}}" data-action="selectTab" data-tab="{{this.id}}" data-group="primary">{{this.label}}</a>
+  <button type="button" class="seb-tab-button{{#if this.active}} is-active{{/if}}" role="tab" aria-selected="{{#if this.active}}true{{else}}false{{/if}}" data-action="selectTab" data-tab="{{this.id}}" {{#if this.disabled}}disabled data-tooltip="{{this.tooltip}}"{{/if}}>
+    <i class="{{this.icon}}"></i> {{this.label}}
+  </button>
   {{/each}}
 </nav>

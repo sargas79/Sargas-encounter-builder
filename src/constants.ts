@@ -32,6 +32,8 @@ export const SETTINGS = {
   numberDuplicateTokens: "numberDuplicateTokens",
   debugMode: "debugMode",
   dataSchemaVersion: "dataSchemaVersion",
+  /** Per-user UI memory: last party, mode and threat. */
+  uiState: "uiState",
 } as const;
 
 /** Names of module-owned documents. */

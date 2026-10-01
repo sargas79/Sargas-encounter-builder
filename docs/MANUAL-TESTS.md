@@ -58,6 +58,22 @@ Run the **deployment** batch a second time logged in as a **player**: T22 must r
 | M27 | Debug cross-check (T25)     | Enable Debug mode, build a standard encounter                                                                                                    | No mismatch message; console shows none                                                                                                   |        |
 | M28 | PWL                         | Enable Proficiency Without Level                                                                                                                 | Header shows the variant; evaluation labeled as system calculation (or unsupported if the helper is missing)                              |        |
 
+## B2. 0.2.0 additions (flow, themes, style)
+
+| #   | Case              | Steps                                                          | Expected                                                                                                                                                                    | Result |
+| --- | ----------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M29 | Start dialog      | Click the dragon tool or the sidebar button                    | Dialog with party (Party actors first), threat segments, level policy, four mode cards; Start opens the workspace on the chosen tab                                         |        |
+| M30 | Gating            | Start with a new empty standalone profile                      | Build/Tables/Deploy tabs disabled with a tooltip; Party tab shown; adding a character enables them                                                                          |        |
+| M31 | Party strip       | Click the party name / a threat segment                        | Dialog reopens / target budget updates everywhere                                                                                                                           |        |
+| M32 | Default packs     | Fresh world, open the builder                                  | All PF2e bestiary compendiums pre-selected; footer shows indexed creature count                                                                                             |        |
+| M33 | Themed generation | Generate with "Surprise me", Any                               | Every creature shares the theme shown in the result pill; reroll keeps the theme; Re-theme changes it                                                                       |        |
+| M34 | Shapes            | Generate Pack / Warband / Boss + minions / Mixed patrol / Lair | Shapes hold: pack = one stat block ×N; warband = one leader above ≥2 troops; boss ≥2 above minions (outsider boss flagged); patrol 2–5 distinct within two levels; lair = 1 |        |
+| M35 | Locked theme      | Lock a goblin, Generate with Surprise me                       | Theme inferred from the lock; other creatures are goblins/humanoids                                                                                                         |        |
+| M36 | Custom theme      | New theme with required trait `undead` and one explicit UUID   | Appears under "Your themes"; generation stays inside it; delete removes it                                                                                                  |        |
+| M37 | Exclude           | Ban icon on a catalog row and on a draft row                   | Creature removed from the draft and never generated; chip under the generator allows it again                                                                               |        |
+| M38 | Look & feel       | Compare with Wondrous Spellbook side by side                   | Same dark palette, violet accent, segments, pills, empty states; readable under Foundry light theme                                                                         |        |
+| M39 | Table editor      | Open the editor                                                | Rows as cards, native rows read-only, validation badges inline                                                                                                              |        |
+
 ## C. Review items (T24)
 
 - `git grep -i` for Paizo proper nouns in `src/`, `lang/`, `docs/`, `tests/`: none expected.

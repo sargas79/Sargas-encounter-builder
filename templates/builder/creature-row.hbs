@@ -1,0 +1,15 @@
+{{!-- Catalog result row. Expects a catalog entry with relative/traitsShort/moreTraits/rarityClass. --}}
+<div class="seb-row seb-creature" data-uuid="{{uuid}}">
+  <img class="seb-portrait" src="{{#if img}}{{img}}{{else}}icons/svg/mystery-man.svg{{/if}}" alt="" loading="lazy">
+  <div class="seb-row-main">
+    <span class="seb-row-name" title="{{name}}">{{name}}{{#if rarityClass}} <span class="seb-pill seb-rarity {{rarityClass}}">{{rarity}}</span>{{/if}}</span>
+    <span class="seb-row-meta">{{localize "sargas-encounter-builder.build.levelShort" level=level}}{{#if relative}} <span class="seb-text-dim">({{relative}})</span>{{/if}} · {{packLabel}}</span>
+    <span class="seb-row-pills">{{#each traitsShort}}<span class="seb-pill">{{this}}</span>{{/each}}{{#if moreTraits}}<span class="seb-pill is-dim">+{{moreTraits}}</span>{{/if}}{{#each tags}}<span class="seb-pill is-tag">{{this}}</span>{{/each}}</span>
+  </div>
+  <div class="seb-row-controls">
+    <button type="button" class="seb-icon-button" data-action="inspectCreature" data-tooltip="{{localize 'sargas-encounter-builder.build.inspect'}}" aria-label="{{localize 'sargas-encounter-builder.build.inspect'}}"><i class="fa-solid fa-eye"></i></button>
+    <button type="button" class="seb-icon-button" data-action="editTags" data-tooltip="{{localize 'sargas-encounter-builder.build.editTags'}}" aria-label="{{localize 'sargas-encounter-builder.build.editTags'}}"><i class="fa-solid fa-tag"></i></button>
+    <button type="button" class="seb-icon-button seb-icon-danger" data-action="ext" data-ext="generator" data-method="exclude" data-tooltip="{{localize 'sargas-encounter-builder.generator.exclude'}}" aria-label="{{localize 'sargas-encounter-builder.generator.exclude'}}"><i class="fa-solid fa-ban"></i></button>
+    <button type="button" class="seb-button seb-button-primary seb-button-small" data-action="addCreature"><i class="fa-solid fa-plus"></i> {{localize "sargas-encounter-builder.build.add"}}</button>
+  </div>
+</div>
