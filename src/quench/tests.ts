@@ -328,4 +328,92 @@ export function registerQuenchTests(quench: Quench): void {
     },
     { displayName: "PF2e Encounter Builder: tables" },
   );
+
+  quench.registerBatch(
+    `${MODULE_ID}.persistence`,
+    (context) => {
+      const { describe, it, assert, after } = context;
+      const createdIds: string[] = [];
+      after(async () => {
+        const { EncounterRepository, JournalRecipeStore } =
+          await import("../foundry/encounter-repository.js");
+        const repo = new EncounterRepository(new JournalRecipeStore());
+        for (const id of createdIds) {
+          try {
+            await repo.delete(id);
+          } catch {
+            /* already gone */
+          }
+        }
+      });
+
+      describe(`persistence (${versionsLine()})`, () => {
+        it("T18: a saved recipe is GM-private, re-reads after a fresh lookup, and recalculation leaves the snapshot alone", async () => {
+          const { EncounterRepository, JournalRecipeStore } =
+            await import("../foundry/encounter-repository.js");
+          const { recipeFromDraft, recalculateRecipe } = await import("../core/recipe.js");
+          const repo = new EncounterRepository(new JournalRecipeStore());
+          const draft = {
+            entries: [
+              {
+                uuid: "Compendium.x.y.Actor.z",
+                name: "Quench Beast",
+                level: 3,
+                quantity: 2,
+                locked: false,
+                img: null,
+                packLabel: null,
+                traits: [],
+              },
+            ],
+            origin: "manual" as const,
+          };
+          const snapshot = {
+            timestamp: Date.now(),
+            partyProfileId: null,
+            partyName: "Quench",
+            memberLevels: [],
+            partySize: 4,
+            referenceLevel: 3,
+            referencePolicy: null,
+            selectedThreat: "moderate" as const,
+            target: 80,
+            supportedXP: 80,
+            complete: true,
+            inferredLabel: "moderate",
+            difference: 0,
+          };
+          const record = await repo.save(recipeFromDraft("PEB Quench T18", draft, snapshot));
+          createdIds.push(record.id);
+          const journal = game.journal.get(record.id);
+          assert.ok(journal, "journal exists");
+          assert.equal(
+            journal!.ownership.default,
+            CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE,
+            "GM-private by default",
+          );
+          const reread = new EncounterRepository(new JournalRecipeStore()).get(record.id);
+          assert.equal(reread?.recipe.evaluation?.supportedXP, 80);
+          const fresh = recalculateRecipe(reread!.recipe, 4, 1);
+          assert.equal(fresh.supportedXP, 160, "level 3 vs party level 1 = +2 → 80 × 2");
+          assert.equal(
+            new EncounterRepository(new JournalRecipeStore()).get(record.id)?.recipe.evaluation?.supportedXP,
+            80,
+            "snapshot unchanged",
+          );
+        });
+
+        it("tag store lives on a GM-private data journal", async () => {
+          const { tags } = services();
+          await tags.setTags("Compendium.x.y.Actor.quench", ["environment:test"]);
+          const journal = game.journal.find((j) => j.getFlag(MODULE_ID, "dataJournal") === true);
+          assert.ok(journal, "data journal created");
+          assert.equal(journal!.ownership.default, CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE);
+          assert.deepEqual(tags.tagsFor("Compendium.x.y.Actor.quench"), ["environment:test"]);
+          await tags.setTags("Compendium.x.y.Actor.quench", []);
+        });
+      });
+    },
+    { displayName: "PF2e Encounter Builder: persistence" },
+  );
 }

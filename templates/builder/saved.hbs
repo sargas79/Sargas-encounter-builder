@@ -1,3 +1,67 @@
 <section class="tab {{#if (eq activeTab "saved")}}active{{/if}}" data-tab="saved" data-group="primary">
-  <div class="peb-msg">{{localize "pf2e-encounter-builder.tabs.comingSoon"}}</div>
+  <div class="peb-columns">
+    <div class="peb-panel">
+      <h3>{{localize "pf2e-encounter-builder.saved.title"}}</h3>
+      <div class="peb-toolbar">
+        <button type="button" data-action="ext" data-ext="saved" data-method="saveCurrent" {{#unless saved.canSave}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk"></i> {{localize "pf2e-encounter-builder.saved.saveCurrent"}}</button>
+      </div>
+      <div class="peb-scroll">
+        <table class="peb-table">
+          <thead><tr><th>{{localize "pf2e-encounter-builder.saved.name"}}</th><th>{{localize "pf2e-encounter-builder.saved.originHeader"}}</th><th class="num">#</th><th>{{localize "pf2e-encounter-builder.saved.updated"}}</th><th></th></tr></thead>
+          <tbody>
+          {{#each saved.records}}
+          <tr class="{{#if this.selected}}locked{{/if}}">
+            <td><label><input type="radio" name="saved.selected" value="{{this.id}}" {{#if this.selected}}checked{{/if}}> {{this.name}}</label></td>
+            <td>{{this.origin}}</td><td class="num">{{this.count}}</td><td class="peb-tags">{{this.updated}}</td>
+            <td class="actions"><button type="button" data-action="ext" data-ext="saved" data-method="open" data-uuid="{{this.id}}" title="{{localize "pf2e-encounter-builder.saved.open"}}"><i class="fa-solid fa-folder-open"></i></button></td>
+          </tr>
+          {{else}}
+          <tr><td colspan="5">{{localize "pf2e-encounter-builder.saved.empty"}}</td></tr>
+          {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="peb-panel">
+      {{#if saved.selected}}
+      <h3>{{saved.selected.name}} <span class="peb-tags">{{saved.selected.origin}}{{#if saved.selected.policy}} · {{saved.selected.policy}}{{/if}}</span></h3>
+      <div class="peb-toolbar">
+        <button type="button" data-action="ext" data-ext="saved" data-method="open"><i class="fa-solid fa-folder-open"></i> {{localize "pf2e-encounter-builder.saved.open"}}</button>
+        <button type="button" data-action="ext" data-ext="saved" data-method="updateFromDraft" {{#unless saved.canSave}}disabled{{/unless}} title="{{localize "pf2e-encounter-builder.saved.updateHint"}}"><i class="fa-solid fa-pen-to-square"></i> {{localize "pf2e-encounter-builder.saved.update"}}</button>
+        <button type="button" data-action="ext" data-ext="saved" data-method="editNotes"><i class="fa-solid fa-note-sticky"></i></button>
+        <button type="button" data-action="ext" data-ext="saved" data-method="rename"><i class="fa-solid fa-pen"></i></button>
+        <button type="button" data-action="ext" data-ext="saved" data-method="duplicate"><i class="fa-solid fa-copy"></i></button>
+        <button type="button" data-action="ext" data-ext="saved" data-method="delete"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      {{#if saved.selected.notes}}<div class="peb-msg">{{saved.selected.notes}}</div>{{/if}}
+      {{#each saved.missing}}<div class="peb-msg error">{{localize "pf2e-encounter-builder.saved.missingEntry" name=this.name uuid=this.uuid}}</div>{{/each}}
+      <div class="peb-scroll">
+        <table class="peb-table">
+          <thead><tr><th>{{localize "pf2e-encounter-builder.build.name"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.level"}}</th><th class="num">{{localize "pf2e-encounter-builder.build.qty"}}</th></tr></thead>
+          <tbody>{{#each saved.selected.entries}}<tr><td>{{this.name}}{{#if this.locked}} <i class="fa-solid fa-lock"></i>{{/if}}</td><td class="num">{{this.level}}</td><td class="num">{{this.quantity}}</td></tr>{{/each}}</tbody>
+        </table>
+        {{#if saved.selected.variant}}
+        <h4>{{localize "pf2e-encounter-builder.saved.variantOf"}}</h4>
+        <div class="peb-tags">{{#each saved.selected.variant.original}}{{this.name}} × {{this.quantity}}{{#unless @last}}, {{/unless}}{{/each}}</div>
+        <div class="peb-tags">{{#each saved.selected.variant.diff}}<div>{{this.changeLabel}}: {{this.name}} {{this.from}} → {{this.to}}</div>{{/each}}</div>
+        {{/if}}
+      </div>
+      <h4>{{localize "pf2e-encounter-builder.saved.savedEvaluation"}}</h4>
+      {{#if saved.selected.evaluation}}
+        {{> "modules/pf2e-encounter-builder/templates/builder/snapshot.hbs" snap=saved.selected.evaluation}}
+      {{else}}<div class="peb-tags">{{localize "pf2e-encounter-builder.saved.noEvaluation"}}</div>{{/if}}
+      <div class="peb-toolbar">
+        <button type="button" data-action="ext" data-ext="saved" data-method="recalculate" {{#unless saved.canRecalc}}disabled{{/unless}}><i class="fa-solid fa-calculator"></i> {{localize "pf2e-encounter-builder.saved.recalculate"}}</button>
+        {{#if saved.recalculated}}<button type="button" data-action="ext" data-ext="saved" data-method="updateEvaluation"><i class="fa-solid fa-arrow-right-to-bracket"></i> {{localize "pf2e-encounter-builder.saved.updateEvaluation"}}</button>{{/if}}
+      </div>
+      {{#if saved.recalculated}}
+      <h4>{{localize "pf2e-encounter-builder.saved.recalculated"}}</h4>
+      {{> "modules/pf2e-encounter-builder/templates/builder/snapshot.hbs" snap=saved.recalculated}}
+      {{/if}}
+      <div class="peb-tags">{{localize "pf2e-encounter-builder.saved.created"}}: {{saved.selected.created}} · {{localize "pf2e-encounter-builder.saved.updated"}}: {{saved.selected.updated}}{{#if saved.selected.seed}} · {{localize "pf2e-encounter-builder.generator.lastSeed"}}: {{saved.selected.seed}}{{/if}}</div>
+      {{else}}
+      <div class="peb-msg">{{localize "pf2e-encounter-builder.saved.select"}}</div>
+      {{/if}}
+    </div>
+  </div>
 </section>

@@ -408,6 +408,58 @@
         "checkInvalid": "Encounter check formula \"{formula}\" is invalid.",
         "noCreatures": "Creature row has no creatures."
       }
+    },
+    "saved": {
+      "title": "Saved encounters",
+      "saveCurrent": "Save current encounter",
+      "name": "Name",
+      "originHeader": "Origin",
+      "updated": "Updated",
+      "created": "Created",
+      "open": "Open in builder",
+      "empty": "No saved encounters yet.",
+      "select": "Select a saved encounter to see its details.",
+      "update": "Update from builder",
+      "updateHint": "Replace the saved creatures and evaluation with the current encounter.",
+      "updateTitle": "Update saved encounter",
+      "updateConfirm": "Replace the contents of \"{name}\" with the current encounter?",
+      "saveTitle": "Save encounter",
+      "renameTitle": "Rename encounter",
+      "nameLabel": "Name",
+      "defaultName": "New encounter",
+      "copyName": "{name} (copy)",
+      "notesTitle": "Encounter notes",
+      "notesLabel": "Notes",
+      "deleteTitle": "Delete saved encounter",
+      "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
+      "savedMessage": "Saved \"{name}\".",
+      "opened": "Opened \"{name}\" in the builder.",
+      "missingSources": "{count} creature source(s) could not be found; saved names and levels are shown instead.",
+      "missingEntry": "Missing source: {name} ({uuid})",
+      "savedEvaluation": "Saved evaluation",
+      "noEvaluation": "No evaluation was saved (the party was not valid at save time).",
+      "recalculate": "Recalculate for current party",
+      "recalculated": "Recalculated (not saved)",
+      "updateEvaluation": "Update saved evaluation",
+      "updateEvalTitle": "Update saved evaluation",
+      "updateEvalConfirm": "Replace the saved evaluation snapshot with the recalculated one? The original context will be lost.",
+      "variantOf": "Balanced variant of",
+      "when": "When",
+      "origin": {
+        "manual": "manual",
+        "generated": "generated",
+        "table": "table",
+        "variant": "variant"
+      },
+      "policy": {
+        "classic": "classic",
+        "partyScaled": "party-scaled"
+      },
+      "change": {
+        "added": "Added",
+        "removed": "Removed",
+        "quantityChanged": "Quantity"
+      }
     }
   }
 }

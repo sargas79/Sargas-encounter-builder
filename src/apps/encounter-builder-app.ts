@@ -39,6 +39,7 @@ import { SETTINGS } from "../constants.js";
 import { GeneratorPanel } from "./generator-panel.js";
 import { DeployPanel } from "./deploy-panel.js";
 import { TablesPanel } from "./tables-panel.js";
+import { SavedPanel } from "./saved-panel.js";
 
 const TEMPLATES = `modules/${MODULE_ID}/templates/builder`;
 
@@ -125,6 +126,7 @@ export class EncounterBuilderApp extends Base {
     generator: new GeneratorPanel(this),
     deploy: new DeployPanel(this),
     tables: new TablesPanel(this),
+    saved: new SavedPanel(this),
   };
 
   static async open(): Promise<EncounterBuilderApp | null> {
@@ -832,6 +834,7 @@ export const PARTIALS = [
   `${TEMPLATES}/build-actions.hbs`,
   `${TEMPLATES}/generator.hbs`,
   `${TEMPLATES}/evaluation.hbs`,
+  `${TEMPLATES}/snapshot.hbs`,
 ];
 let partialsLoaded = false;
 export async function ensurePartials(): Promise<void> {
