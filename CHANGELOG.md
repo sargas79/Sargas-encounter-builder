@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- Fixed: the workspace opened stuck at the top-left corner, with an empty Build tab, "0 compendiums"
+  in the footer, and could not be closed. The first render awaited a nested render from inside
+  `_onFirstRender`; ApplicationV2 serialises renders, so the window never finished rendering. Pack
+  selection and party resolution now happen before the first render, and lifecycle hooks no longer
+  await renders.
+
 ## 0.2.2
 
 - Fixed: the launchers (dragon tool in the Token controls, button in the Actors sidebar header) did not
