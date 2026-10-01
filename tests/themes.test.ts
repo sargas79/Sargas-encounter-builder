@@ -356,3 +356,120 @@ describe("generator: new compositions and distinct constraints", () => {
     if (two.ok) expect(two.entries.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe("review fixes (0.2.0)", () => {
+  const party = { threat: "moderate" as const, partySize: 4, referenceLevel: 2 };
+
+  it("archetype minimums win over a smaller user max count instead of failing with countRangeInvalid", () => {
+    const result = generateThemedEncounter({
+      ...party,
+      referenceLevel: 3,
+      candidates: bestiary(),
+      theme: "auto:animal",
+      archetype: "pack",
+      maxCount: 2,
+      rng: mulberry32(1),
+    });
+    expect(result.ok || result.reason !== "countRangeInvalid").toBe(true);
+  });
+
+  it("an excluded creature is never used as the outsider boss", () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const result = generateThemedEncounter({
+        ...party,
+        threat: "extreme",
+        candidates: bestiary(),
+        theme: "auto:undead/ghoul",
+        archetype: "bossMinions",
+        excludeUuids: ["necromancer", "bear"],
+        rng: mulberry32(seed),
+      });
+      if (result.ok) expect(result.entries.map((e) => e.uuid)).not.toContain("necromancer");
+    }
+  });
+
+  it("re-theme with locked creatures picks a different theme that still contains them", () => {
+    const locked = [
+      { uuid: "gob-warrior", name: "gob-warrior", level: 1, quantity: 1, traits: ["goblin", "humanoid"] },
+    ];
+    const first = generateThemedEncounter({
+      ...party,
+      threat: "severe",
+      candidates: bestiary(),
+      theme: "auto",
+      archetype: "any",
+      locked,
+      rng: mulberry32(2),
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = generateThemedEncounter({
+      ...party,
+      threat: "severe",
+      candidates: bestiary(),
+      theme: "auto",
+      archetype: "any",
+      locked,
+      excludeThemeIds: [first.theme.id],
+      rng: mulberry32(3),
+    });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.theme.id).not.toBe(first.theme.id);
+    expect(themePool(second.theme, bestiary()).some((c) => c.uuid === "gob-warrior")).toBe(true);
+  });
+
+  it("pack with one locked creature uses that stat block; two locked stat blocks cannot form a pack", () => {
+    const one = generateThemedEncounter({
+      ...party,
+      referenceLevel: 3,
+      candidates: bestiary(),
+      theme: "auto:animal",
+      archetype: "pack",
+      locked: [{ uuid: "wolf", name: "wolf", level: 1, quantity: 1, traits: ["animal"] }],
+      rng: mulberry32(1),
+    });
+    expect(one.ok).toBe(true);
+    if (one.ok) expect(new Set(one.entries.map((e) => e.uuid))).toEqual(new Set(["wolf"]));
+    const two = generateThemedEncounter({
+      ...party,
+      referenceLevel: 3,
+      candidates: bestiary(),
+      theme: "auto:animal",
+      archetype: "pack",
+      locked: [
+        { uuid: "wolf", name: "wolf", level: 1, quantity: 1, traits: ["animal"] },
+        { uuid: "gob-dog", name: "gob-dog", level: 1, quantity: 1, traits: ["animal"] },
+      ],
+      rng: mulberry32(1),
+    });
+    expect(two).toMatchObject({ ok: false, reason: "lockedViolatesComposition" });
+  });
+
+  it("sub-theme keys containing a slash survive derivation", () => {
+    const pool = [
+      c("a", 1, ["humanoid"], ["family:orc/warband"]),
+      c("b", 1, ["humanoid"], ["family:orc/warband"]),
+      c("d", 2, ["humanoid"], ["family:orc/warband"]),
+    ];
+    const theme = deriveThemes(pool).find((t) => t.id === "auto:humanoid/family:orc/warband")!;
+    expect(theme).toBeTruthy();
+    expect(themePool(theme, pool)).toHaveLength(3);
+  });
+
+  it("custom themes converted to Theme objects keep their any-of traits", () => {
+    const custom = {
+      id: "x",
+      name: "Fey or beasts",
+      requiredTraits: [],
+      anyTraits: ["fey", "animal"],
+      environment: null,
+      candidateUuids: [],
+      notes: "",
+    };
+    const theme = availableThemes(bestiary(), [custom]).find((t) => t.id === "custom:x")!;
+    const pool = themePool(theme, bestiary());
+    expect(pool.every((p) => p.traits.includes("fey") || p.traits.includes("animal"))).toBe(true);
+    expect(pool.length).toBeGreaterThan(0);
+  });
+});

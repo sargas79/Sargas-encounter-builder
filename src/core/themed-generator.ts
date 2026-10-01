@@ -184,10 +184,16 @@ export function generateThemedEncounter(input: ThemedInput): ThemedResult {
         themesTried,
       };
     themes = [found];
-  } else if (lockedThemed.length > 0 && inferThemeFromLocked(lockedThemed)) {
+  } else if (
+    lockedThemed.length > 0 &&
+    inferThemeFromLocked(lockedThemed) &&
+    !(input.excludeThemeIds ?? []).includes(inferThemeFromLocked(lockedThemed)!.id)
+  ) {
     themes = [inferThemeFromLocked(lockedThemed)!];
   } else {
     const excludedThemes = new Set(input.excludeThemeIds ?? []);
+    // With locked creatures, only themes that contain every locked creature keep the result coherent.
+    const lockedUuids = new Set(locked.map((l) => l.uuid));
     const all = availableThemes(input.candidates, input.customThemes).filter(
       (th) => !excludedThemes.has(th.id),
     );
@@ -195,7 +201,12 @@ export function generateThemedEncounter(input: ThemedInput): ThemedResult {
       return { ok: false, reason: "noThemes", detail: {}, theme: null, archetype, themesTried };
     // Weighted random order by pool size, bounded attempts.
     const sized = all
-      .map((t) => ({ t, size: themePool(t, input.candidates, customs).length }))
+      .map((t) => {
+        const pool = themePool(t, input.candidates, customs);
+        const poolUuids = new Set(pool.map((c) => c.uuid));
+        const holdsLocked = [...lockedUuids].every((u) => poolUuids.has(u));
+        return { t, size: holdsLocked ? pool.length : 0 };
+      })
       .filter((x) => x.size > 0);
     const order: Theme[] = [];
     let remaining = [...sized];
@@ -225,8 +236,12 @@ export function generateThemedEncounter(input: ThemedInput): ThemedResult {
       candidates: pool,
       relativeMin: Math.max(input.relativeMin ?? -4, constraints.relativeMin ?? -4),
       relativeMax: Math.min(input.relativeMax ?? 4, constraints.relativeMax ?? 4),
+      // The archetype's own minimum wins over a user cap that would make the range empty.
       minCount: Math.max(input.minCount ?? 1, constraints.minCount),
-      maxCount: Math.min(maxCountCap, constraints.maxCount),
+      maxCount: Math.max(
+        Math.max(input.minCount ?? 1, constraints.minCount),
+        Math.min(maxCountCap, constraints.maxCount),
+      ),
       composition: constraints.composition,
       duplicateCap: constraints.duplicateCap ?? input.duplicateCap ?? 4,
       excludeUuids: input.excludeUuids,
@@ -237,12 +252,21 @@ export function generateThemedEncounter(input: ThemedInput): ThemedResult {
     };
 
     // Pack: one stat block, try creatures in random order so the pick is random but exact.
+    // A locked creature is the pack's stat block; several distinct locked creatures cannot form a pack.
     if (archetype === "pack") {
-      const generatedLockedUuids = new Set(locked.map((l) => l.uuid));
-      const choices = shuffle(
-        rng,
-        pool.filter((c) => !generatedLockedUuids.has(c.uuid) || true),
-      );
+      const lockedUuids = [...new Set(locked.map((l) => l.uuid))];
+      if (lockedUuids.length > 1) {
+        lastFailure = {
+          ok: false,
+          reason: "lockedViolatesComposition",
+          detail: { composition: "pack", lockedCount: lockedUuids.length },
+          enumerated: 0,
+          capped: false,
+        };
+        continue;
+      }
+      const choices =
+        lockedUuids.length === 1 ? pool.filter((c) => c.uuid === lockedUuids[0]) : shuffle(rng, pool);
       for (const creature of choices.slice(0, 40)) {
         const result = generateEncounter({ ...base, candidates: [creature] });
         if (result.ok) return success(result, theme, archetype, null, pool.length, themesTried);
@@ -257,11 +281,13 @@ export function generateThemedEncounter(input: ThemedInput): ThemedResult {
       if (inTheme.ok) return success(inTheme, theme, archetype, null, pool.length, themesTried);
       lastFailure = inTheme;
       const poolUuids = new Set(pool.map((c) => c.uuid));
+      const excludedUuids = new Set(input.excludeUuids ?? []);
       const outsiders = shuffle(
         rng,
         input.candidates.filter(
           (c) =>
             !poolUuids.has(c.uuid) &&
+            !excludedUuids.has(c.uuid) &&
             c.level - input.referenceLevel >= 1 &&
             c.level - input.referenceLevel <= (input.relativeMax ?? 4),
         ),

@@ -2,9 +2,9 @@
 
 ## 0.2.0 (unreleased)
 
-- Renamed the module to `sargas-encounter-builder` ("Sargas - Encounter Builder"). Worlds that used
-  `pf2e-encounter-builder` 0.1.0 keep their journal entries; settings and flags under the old id are not
-  migrated (0.1.0 was a pre-release used by the maintainer only).
+- Renamed the module to `sargas-encounter-builder` ("Sargas - Encounter Builder"). A migration copies
+  saved encounters, tags and table metadata from the 0.1.0 flag namespace; world settings (party
+  profiles, selected packs) are not carried over and are set up again by the start dialog.
 - Targets Foundry VTT 14 and PF2e 8.x.
 - Party-first flow: a start dialog asks for party, threat and mode; Build, Tables and Deploy are gated
   until the party resolves.

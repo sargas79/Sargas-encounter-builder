@@ -25,7 +25,8 @@
       "threat": "Threat",
       "policy": "If levels differ",
       "policyHint": "Used only when the counted characters are not all the same level.",
-      "mode": "How do you want to build it?",
+      "modeLabel": "How do you want to build it?",
+      "mode": { "manual": "Browse", "random": "Generate", "table": "Table", "saved": "Saved" },
       "modeHint": {
         "manual": "Pick creatures from the catalog yourself.",
         "random": "Themed, budget-fitting encounter in one click.",

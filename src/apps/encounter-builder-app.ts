@@ -601,11 +601,15 @@ export class EncounterBuilderApp extends Base {
   #onKeydown(event: KeyboardEvent): void {
     const target = event.target as HTMLInputElement;
     if (event.key === "Enter" && target?.name === "filter.search") {
-      const first = this.state.results[0];
-      if (first) {
+      event.preventDefault();
+      // The debounced search may not have run yet: query now and add the first fresh match.
+      this.state.filter.search = target.value;
+      void this.#runSearch().then(() => {
+        const first = this.state.results[0];
+        if (!first) return;
         this.setDraft(addEntry(this.state.draft, entryFromCatalog(first)));
-        void this.render({ parts: ["build", "deploy", "footer"] });
-      }
+        return this.render({ parts: ["build", "deploy", "footer"] });
+      });
     }
   }
 

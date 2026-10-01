@@ -119,6 +119,8 @@ export interface Theme {
   environment: string | null;
   /** Custom themes: all of these traits are required. */
   requiredTraits: string[];
+  /** Custom themes: at least one of these traits/tags when non-empty. */
+  anyTraits: string[];
   /** Custom themes: explicit creature UUIDs always included. */
   candidateUuids: string[];
   notes: string;
@@ -186,6 +188,11 @@ export function matchesTheme(
     return false;
   if (theme.subTrait && !subTraitsOf(candidate).includes(theme.subTrait)) return false;
   if (theme.environment && !environmentsOf(candidate).includes(theme.environment)) return false;
+  if (
+    theme.anyTraits.length > 0 &&
+    !theme.anyTraits.some((t) => candidate.traits.includes(t) || (candidate.tags ?? []).includes(t))
+  )
+    return false;
   if (theme.requiredTraits.length > 0 && !theme.requiredTraits.every((t) => candidate.traits.includes(t)))
     return false;
   return true;
@@ -245,6 +252,7 @@ export function deriveThemes(candidates: ThemeCandidate[], options: DeriveOption
           subTrait: null,
           environment: null,
           requiredTraits: [],
+          anyTraits: [],
           candidateUuids: [],
           notes: "",
         },
@@ -254,7 +262,9 @@ export function deriveThemes(candidates: ThemeCandidate[], options: DeriveOption
   }
   for (const [key, members] of bySub) {
     if (members.length < minSub) continue;
-    const [type, sub] = key.split("/") as [string, string];
+    const slash = key.indexOf("/");
+    const type = key.slice(0, slash);
+    const sub = key.slice(slash + 1);
     const subLabel = sub.startsWith("family:") ? sub.slice("family:".length) : sub;
     themes.push(
       finish(
@@ -266,6 +276,7 @@ export function deriveThemes(candidates: ThemeCandidate[], options: DeriveOption
           subTrait: sub,
           environment: null,
           requiredTraits: [],
+          anyTraits: [],
           candidateUuids: [],
           notes: "",
         },
@@ -285,6 +296,7 @@ export function deriveThemes(candidates: ThemeCandidate[], options: DeriveOption
           subTrait: null,
           environment: env,
           requiredTraits: [],
+          anyTraits: [],
           candidateUuids: [],
           notes: "",
         },
@@ -304,6 +316,7 @@ export function customToTheme(custom: CustomTheme): Theme {
     subTrait: null,
     environment: custom.environment,
     requiredTraits: custom.requiredTraits,
+    anyTraits: custom.anyTraits,
     candidateUuids: custom.candidateUuids,
     notes: custom.notes,
   };
@@ -332,6 +345,7 @@ export function inferThemeFromLocked(locked: ThemeCandidate[]): Theme | null {
           subTrait: null,
           environment: null,
           requiredTraits: [trait],
+          anyTraits: [],
           candidateUuids: [],
           notes: "",
         }
@@ -348,6 +362,7 @@ export function inferThemeFromLocked(locked: ThemeCandidate[]): Theme | null {
     subTrait: sub,
     environment: null,
     requiredTraits: [],
+    anyTraits: [],
     candidateUuids: [],
     notes: "",
   };

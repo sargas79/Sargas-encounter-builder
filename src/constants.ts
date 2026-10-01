@@ -26,6 +26,7 @@ export const SETTINGS = {
   partyProfiles: "partyProfiles",
   activeParty: "activeParty",
   selectedPacks: "selectedPacks",
+  packsInitialized: "packsInitialized",
   tableMaxDepth: "tableMaxDepth",
   tableMaxQuantityPerEntry: "tableMaxQuantityPerEntry",
   tableMaxTotalCreatures: "tableMaxTotalCreatures",

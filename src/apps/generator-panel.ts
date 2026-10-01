@@ -3,7 +3,7 @@
  */
 import type { CustomThemeRecord } from "../core/schemas.js";
 import { removeEntry, type Draft, type DraftEntry } from "../core/draft.js";
-import { rngFromSeed } from "../core/rng.js";
+import { hashSeed, rngFromSeed } from "../core/rng.js";
 import {
   ARCHETYPES,
   availableThemes,
@@ -52,7 +52,7 @@ export class GeneratorPanel {
   lastResult: ThemedResult | null = null;
   lastSeed: string | null = null;
   busy = false;
-  #themeCache: { key: string; themes: Theme[] } | null = null;
+  #themeCache: { key: string; themes: Theme[]; sizes: Map<string, number> } | null = null;
 
   constructor(private readonly app: EncounterBuilderApp) {}
 
@@ -82,13 +82,18 @@ export class GeneratorPanel {
     }));
   }
 
-  async themes(): Promise<{ themes: Theme[]; candidates: ThemedCandidate[] }> {
+  async themes(): Promise<{ themes: Theme[]; candidates: ThemedCandidate[]; sizes: Map<string, number> }> {
     const candidates = await this.#candidates();
-    const key = `${candidates.length}:${candidates.map((c) => c.uuid).join("|").length}:${services().themes.list().length}`;
-    if (this.#themeCache?.key === key) return { themes: this.#themeCache.themes, candidates };
-    const themes = availableThemes(candidates, services().themes.list());
-    this.#themeCache = { key, themes };
-    return { themes, candidates };
+    const customs = services().themes.list();
+    const key = `${hashSeed(candidates.map((c) => c.uuid).join("|"))}:${hashSeed(JSON.stringify(customs))}`;
+    if (this.#themeCache?.key === key) {
+      return { themes: this.#themeCache.themes, candidates, sizes: this.#themeCache.sizes };
+    }
+    const themes = availableThemes(candidates, customs);
+    const customMap = new Map(customs.map((c) => [c.id, c]));
+    const sizes = new Map(themes.map((th) => [th.id, themePool(th, candidates, customMap).length]));
+    this.#themeCache = { key, themes, sizes };
+    return { themes, candidates, sizes };
   }
 
   /* ---------------------------- context ----------------------------- */
@@ -98,18 +103,13 @@ export class GeneratorPanel {
     let themeOptions: { value: string; label: string; selected: boolean; group: string; size: number }[] = [];
     if (ready) {
       try {
-        const { themes, candidates } = await this.themes();
-        const customs = new Map(
-          services()
-            .themes.list()
-            .map((c) => [c.id, c]),
-        );
+        const { themes, sizes } = await this.themes();
         themeOptions = themes.map((theme) => ({
           value: theme.id,
           label: theme.name,
           selected: theme.id === this.options.themeId,
           group: theme.kind === "custom" ? "custom" : theme.kind === "environment" ? "environment" : "auto",
-          size: themePool(theme, candidates, customs).length,
+          size: sizes.get(theme.id) ?? 0,
         }));
       } catch (error) {
         console.error("sargas-encounter-builder | theme derivation failed", error);
@@ -179,12 +179,23 @@ export class GeneratorPanel {
         this.options.outsiderBoss = (target as HTMLInputElement).checked;
         break;
       case "relativeMin":
-      case "relativeMax":
+      case "relativeMax": {
+        const n = Number.parseInt(value, 10);
+        this.options[key] = Number.isInteger(n)
+          ? Math.max(-4, Math.min(4, n))
+          : key === "relativeMin"
+            ? -4
+            : 4;
+        break;
+      }
       case "minCount":
       case "maxCount":
-      case "duplicateCap":
-        this.options[key] = Number.parseInt(value, 10) || 0;
+      case "duplicateCap": {
+        const n = Number.parseInt(value, 10);
+        this.options[key] =
+          Number.isInteger(n) && n >= 1 ? n : key === "minCount" ? 1 : key === "maxCount" ? 6 : 4;
         break;
+      }
       default:
         return false;
     }
