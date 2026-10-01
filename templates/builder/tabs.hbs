@@ -1,0 +1,5 @@
+<nav class="tabs" data-group="primary">
+  {{#each tabs}}
+  <a class="item {{#if this.active}}active{{/if}}" data-action="selectTab" data-tab="{{this.id}}" data-group="primary">{{this.label}}</a>
+  {{/each}}
+</nav>

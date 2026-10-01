@@ -1,7 +1,18 @@
 {
   "pf2e-encounter-builder": {
     "app": { "title": "Encounter Builder" },
-    "errors": { "gmOnly": "Only a Gamemaster can use the Encounter Builder." },
+    "tabs": {
+      "party": "Party",
+      "build": "Build",
+      "tables": "Tables",
+      "saved": "Saved",
+      "deploy": "Deploy",
+      "comingSoon": "This tab is implemented in a later milestone."
+    },
+    "errors": {
+      "gmOnly": "Only a Gamemaster can use the Encounter Builder.",
+      "generic": "PF2e Encounter Builder: {message}"
+    },
     "migrations": {
       "failed": "PF2e Encounter Builder: data migration {version} failed. See the console for details."
     },
@@ -26,6 +37,170 @@
         "name": "Debug mode",
         "hint": "Cross-check XP totals against the PF2e system helper and log extra diagnostics."
       }
+    },
+    "header": {
+      "party": "Party",
+      "participating": "Participating",
+      "levels": "Levels",
+      "reference": "Reference level",
+      "threat": "Threat",
+      "target": "Target",
+      "variant": "Variant rule"
+    },
+    "threat": {
+      "trivial": "Trivial",
+      "low": "Low",
+      "moderate": "Moderate",
+      "severe": "Severe",
+      "extreme": "Extreme"
+    },
+    "party": {
+      "profiles": "Party profiles",
+      "none": "No party",
+      "noProfile": "Create a party profile or link a PF2e Party actor first.",
+      "create": "New profile",
+      "link": "Link Party actor",
+      "noPartyActors": "No PF2e Party actors in this world",
+      "refresh": "Re-read actors",
+      "newProfileTitle": "New party profile",
+      "renameTitle": "Rename party profile",
+      "newProfileLabel": "Name",
+      "defaultName": "Party",
+      "deleteTitle": "Delete party profile",
+      "deleteConfirm": "Delete the party profile \"{name}\"? Actors are not affected.",
+      "kind": { "linked": "linked to Party actor", "standalone": "standalone" },
+      "linkedHint": "Members come from the linked PF2e Party actor. Toggle participation here; edit membership on the Party actor.",
+      "roster": "Roster",
+      "counted": "counted",
+      "pick": "Add actor…",
+      "pickTitle": "Add party member",
+      "pickLabel": "Actor",
+      "dropHint": "Drop a character Actor here to add it to the party.",
+      "name": "Name",
+      "type": "Type",
+      "level": "Level",
+      "statusHeader": "Status",
+      "toggle": "Toggle participation",
+      "toggleCounts": "Count this NPC as a party member",
+      "remove": "Remove from profile",
+      "empty": "No members yet.",
+      "estimate": "estimate",
+      "unavailable": "unavailable",
+      "threatLabel": "Target threat",
+      "policyLabel": "Mixed levels: reference level policy",
+      "manualLevel": "Manual reference level",
+      "policy": {
+        "none": "—",
+        "choose": "Choose a policy…",
+        "uniform": "shared level",
+        "averageFloor": "average rounded down (module estimate)",
+        "highest": "highest level",
+        "lowest": "lowest level",
+        "manual": "manual override"
+      },
+      "status": {
+        "counted": "Counted",
+        "inactive": "Not participating",
+        "npcOverride": "Counted (GM override)",
+        "npcNotCounted": "NPC ally: not counted",
+        "companionNotCounted": "Companion/familiar: not counted",
+        "missing": "Missing or inaccessible actor",
+        "noLevel": "No level found",
+        "rejectParty": "Party actor: not a member",
+        "rejectFamiliar": "Familiar: not a member",
+        "rejectHazard": "Hazard: not a member",
+        "rejectUnsupported": "Unsupported actor type"
+      },
+      "reject": {
+        "duplicateMember": "That actor is already in the party.",
+        "rejectParty": "A Party actor cannot be a member. Link it instead.",
+        "rejectFamiliar": "Familiars do not count toward party size and cannot be added.",
+        "rejectHazard": "Hazards cannot be party members.",
+        "rejectUnsupported": "Only character and NPC actors can be party members.",
+        "linkedProfileReadOnly": "This profile mirrors a Party actor; add members on the Party actor.",
+        "missing": "That actor could not be read.",
+        "profileMissing": "No party profile selected."
+      },
+      "blockers": {
+        "noActiveCharacters": "No participating characters: evaluation and generation are disabled.",
+        "mixedLevelsNeedPolicy": "Party members have different levels. Choose a reference-level policy.",
+        "referenceLevelUnresolved": "The reference level is not set. Enter a manual level between 1 and 20.",
+        "referenceLevelInvalid": "The reference level must be between 1 and 20."
+      }
+    },
+    "build": {
+      "catalog": "Creature catalog",
+      "packs": "Source compendiums",
+      "packState": {
+        "notLoaded": "not loaded",
+        "loaded": "{count} NPCs ({skipped} entries without level skipped)",
+        "inaccessible": "inaccessible",
+        "missing": "missing",
+        "error": "error: {message}",
+        "missingId": "Selected compendium \"{id}\" no longer exists."
+      },
+      "noPacks": "Select at least one source compendium.",
+      "loading": "Loading indexes…",
+      "search": "Search",
+      "searchPlaceholder": "creature name",
+      "levelMin": "Level ≥",
+      "levelMax": "Level ≤",
+      "relativeMin": "Relative ≥",
+      "relativeMax": "Relative ≤",
+      "traits": "Traits",
+      "tags": "Tags",
+      "rarity": "Rarity",
+      "name": "Name",
+      "level": "Lvl",
+      "qty": "Qty",
+      "add": "Add to encounter",
+      "inspect": "Inspect source creature",
+      "editTags": "Edit custom tags",
+      "tagsTitle": "Custom tags",
+      "tagsLabel": "Tags (key:value, comma separated, e.g. family:goblinoid, environment:forest)",
+      "noResults": "No creatures match.",
+      "encounter": "Encounter",
+      "dropHint": "Drop an NPC Actor here to add it (no import happens).",
+      "emptyDraft": "No creatures yet. Add from the catalog, generate, or roll a table.",
+      "lock": "Lock for generation",
+      "remove": "Remove",
+      "clear": "Clear",
+      "worldActor": "World actor"
+    },
+    "evaluation": {
+      "selected": "Selected threat",
+      "target": "Target budget",
+      "supported": "Supported XP",
+      "difference": "Difference",
+      "completeness": "Completeness",
+      "inferred": "Inferred threat",
+      "complete": "complete",
+      "incomplete": "incomplete",
+      "beyondExtreme": "Beyond Extreme",
+      "unquantified": "(unquantified)",
+      "incompleteNegligible": "(negligible creatures not counted)",
+      "blocked": "Evaluation unavailable: fix the party problems on the Party tab.",
+      "pwolSystem": "Proficiency Without Level: creature XP from the PF2e system calculation.",
+      "pwolUnsupported": "Proficiency Without Level is enabled but the PF2e XP helper is unavailable; standard budgets shown may be inaccurate.",
+      "status": {
+        "belowRange": "below −4: negligible threat, not counted",
+        "aboveRange": "above +4: beyond the budget table, danger not quantified"
+      },
+      "warnings": {
+        "incompleteBelowRange": "Some creatures are more than 4 levels below the party and are not counted.",
+        "incompleteAboveRange": "Some creatures are more than 4 levels above the party; the encounter's danger cannot be quantified.",
+        "overBudget": "Over the selected budget by {difference} XP.",
+        "underBudget": "Under the selected budget by {difference} XP.",
+        "threatUnavailable": "The selected threat has no valid budget for this party size.",
+        "largeParty": "Party of {partySize}: the rules give limited guidance for parties larger than 8.",
+        "quantityInvalid": "Invalid quantity for an entry was treated as 0."
+      }
+    },
+    "messages": {
+      "dropNotActor": "Only Actors can be dropped here.",
+      "dropNotNpc": "Only NPC actors with a level can be added to an encounter.",
+      "sourceMissing": "Source creature {uuid} could not be loaded.",
+      "crossCheckMismatch": "XP cross-check: module computed {module} XP, PF2e system computed {system} XP."
     }
   }
 }

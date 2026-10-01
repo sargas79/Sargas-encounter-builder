@@ -17,10 +17,16 @@ were verified by reading source code and type definitions, not by executing code
 | PF2e v14 branch       | No branch named `v14`, `v14-dev`, `v14-prototype`, `main`, `next`, or `release-v14` exists on the repository | **No PF2e release declares Foundry v14 compatibility** |
 | Foundry v14           | foundryvtt.com unreachable from the build environment; could not confirm a stable v14 release                | Not confirmed                                          |
 
-**Decision:** target **Foundry VTT 13** with **PF2e 7.x**. `module.json` declares `compatibility.minimum: "13"`,
-`compatibility.maximum: "13"`, and leaves `verified` unset because the module has not been run. Foundry v14
-is treated as provisional: when a PF2e release declares v14 support, re-verify §3 and §4 below (the
-TableResult schema and ApplicationV2 APIs are the most likely to change) before raising `maximum`.
+**Decision (updated after the maintainer confirmed their world runs Foundry v14):** the module targets
+**Foundry VTT 14** with the PF2e release that supports it, and also declares 13 so the APIs verified below are
+covered. `module.json` declares `compatibility.minimum: "13"`, `compatibility.maximum: "14"`, and leaves
+`verified` unset because the module has not been run. The public PF2e GitHub repository could not be used to
+verify the v14 system API: as of 2026-10-01 its `release`/`master` branches still read 6.12.4 (Foundry 12) and
+`v13-dev` reads 7.9.1 (Foundry 13), with no v14 branch — the repository appears to lag the published system.
+All data paths in §2 were therefore verified against PF2e 7.9.1 sources, and all Foundry APIs in §3 against
+the Foundry 13 type definitions shipped with it. Everything the module calls is either a v13 ApplicationV2 /
+namespaced `foundry.*` API expected to persist in v14 or is wrapped in `src/foundry/compat.ts` with a
+fallback. **Run the Quench suite on the real v14 + PF2e install before trusting any of §2–§3** (see §4 and §5).
 
 ## 2. PF2e data paths (verified by source reading, PF2e `v13-dev` @ 7.9.1)
 

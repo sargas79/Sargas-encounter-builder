@@ -184,9 +184,7 @@ declare global {
     visible: boolean;
     locked: boolean;
     index: { size: number; contents: CompendiumIndexEntry[] };
-    getIndex(options?: {
-      fields?: string[];
-    }): Promise<{
+    getIndex(options?: { fields?: string[] }): Promise<{
       contents: CompendiumIndexEntry[];
       size: number;
       get(id: string): CompendiumIndexEntry | undefined;
