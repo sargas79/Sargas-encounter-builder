@@ -95,4 +95,30 @@ These are isolated behind `src/foundry/*` adapters and are exercised by the Quen
 
 ## 6. Test results in the build environment
 
-Recorded at the end of each milestone (see git history and the final section of the README).
+Recorded on 2026-10-01 in the build container (Node 22.22.0, no Foundry):
+
+| Check                                         | Result                                                                                 |
+| --------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `npm test` (Vitest 4)                         | 130 tests, 8 files, all passing                                                        |
+| `npm run lint` (ESLint 9 + typescript-eslint) | clean                                                                                  |
+| `npm run typecheck` (TypeScript 5.9, strict)  | clean                                                                                  |
+| `npm run build` (Vite 7, ES module)           | `dist/pf2e-encounter-builder.js` + lazy chunks                                         |
+| Quench suites                                 | **not executed** (no Foundry available); 4 batches registered in `src/quench/tests.ts` |
+| Manual matrix (`docs/MANUAL-TESTS.md`)        | **not executed**                                                                       |
+
+`module.json` therefore declares `compatibility.minimum: "13"`, `maximum: "14"`, and no `verified`.
+
+## 7. Foundry v14-specific risks to verify first
+
+The code was written against the v13 API surface. On v14 check these before anything else:
+
+1. `foundry.applications.api.ApplicationV2` / `HandlebarsApplicationMixin` behaviour of `PARTS`, `actions`,
+   `_onRender`, `render({ parts })` (used by both applications).
+2. `foundry.applications.ux.DragDrop.implementation` and `TextEditor.implementation.getDragEventData`
+   (wrapped in `src/foundry/compat.ts` with fallbacks).
+3. `CONFIG.<Document>.documentClass.create(...)` for Actor, JournalEntry, RollTable, Folder, Combat.
+4. `RollTable#roll({ recursive: false })` semantics and the `TableResult` schema (`type`, `documentUuid`, `range`, `weight`, `drawn`).
+5. `Scene#dimensions` fields (`sceneX`, `sceneY`, `sceneWidth`, `sceneHeight`) and `grid.size`/`grid.type`.
+6. `canvas.canvasCoordinatesFromClient` for origin picking (falls back to `canvas.mousePosition`).
+7. Handlebars helpers `eq`, `ne`, `concat`, `localize` availability in templates.
+8. The `renderActorDirectory` hook signature (HTMLElement vs. jQuery) for the launcher button.

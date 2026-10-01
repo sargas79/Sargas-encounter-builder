@@ -1,0 +1,28 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: npm test
+      - run: npm run build
+      - name: Package module
+        run: |
+          mkdir -p package/pf2e-encounter-builder
+          cp -r module.json dist lang styles templates LICENSE LICENSE-ORC.md README.md package/pf2e-encounter-builder/
+          (cd package && zip -r ../pf2e-encounter-builder.zip pf2e-encounter-builder)
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            pf2e-encounter-builder.zip
+            module.json
