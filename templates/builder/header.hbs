@@ -1,4 +1,6 @@
-{{!-- Party strip: who is fighting, at what level, against which threat. Always visible. --}}
+{{!-- Party strip: who is fighting, at what level, against which threat. Always visible.
+     One root element: ApplicationV2 parts must render exactly one. --}}
+<div class="seb-header">
 <header class="seb-strip">
   <div class="seb-strip-party">
     <span class="seb-eyebrow">{{localize "sargas-encounter-builder.header.party"}}</span>
@@ -31,3 +33,4 @@
 {{/if}}
 {{#each header.blockers}}<div class="seb-note is-error"><i class="fa-solid fa-circle-exclamation"></i> {{this}}</div>{{/each}}
 {{#each messages}}<div class="seb-note is-{{this.level}}">{{this.text}}</div>{{/each}}
+</div>

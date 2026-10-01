@@ -893,7 +893,7 @@
   font-size: 11px;
 }
 /* Notes rendered directly under the strip get the window gutter. */
-[data-application-part="header"] > .seb-note {
+.seb-header > .seb-note {
   margin: 6px 14px 0;
 }
 
