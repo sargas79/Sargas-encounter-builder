@@ -244,4 +244,88 @@ export function registerQuenchTests(quench: Quench): void {
     },
     { displayName: "PF2e Encounter Builder: deployment" },
   );
+
+  quench.registerBatch(
+    `${MODULE_ID}.tables`,
+    (context) => {
+      const { describe, it, assert, after } = context;
+      const created: FoundryDocument[] = [];
+      after(async () => {
+        for (const doc of created) {
+          try {
+            await doc.delete();
+          } catch {
+            /* already gone */
+          }
+        }
+      });
+
+      describe(`tables (${versionsLine()})`, () => {
+        it("T17: repeated module rolls do not post chat, mark drawn, or exhaust a no-replacement table", async () => {
+          const { createEncounterTable, saveTable } = await import("../foundry/table-flags.js");
+          const { rollEncounterTable } = await import("../foundry/table-resolver.js");
+          const { emptyResultFlags } = await import("../core/schemas.js");
+          const table = await createEncounterTable("PEB Quench T17", "1d2");
+          created.push(table);
+          await table.update({ replacement: false });
+          await saveTable(
+            table,
+            {
+              formula: "1d2",
+              flags: {
+                schemaVersion: 1,
+                mode: "range",
+                encounterCheck: null,
+                tags: { region: [], terrain: [], season: [], timeOfDay: [] },
+                notes: "",
+              },
+              rows: [
+                {
+                  id: null,
+                  range: [1, 1],
+                  weight: 1,
+                  text: "Tracks",
+                  flags: { ...emptyResultFlags("narrative"), narrativeKind: "tracks" },
+                },
+                { id: null, range: [2, 2], weight: 1, text: "Nothing", flags: emptyResultFlags("none") },
+              ],
+              deleteIds: [],
+            },
+            () => null,
+          );
+          const messagesBefore = (game as unknown as { messages: { size: number } }).messages.size;
+          for (let i = 0; i < 6; i++) {
+            const report = await rollEncounterTable(table.uuid);
+            assert.equal(report.outcome.errors.length, 0, JSON.stringify(report.outcome.errors));
+            assert.equal(report.outcome.narratives.length, 1, "exactly one narrative each roll");
+          }
+          const fresh = (await fromUuid(table.uuid)) as RollTableDocument;
+          assert.isTrue(
+            fresh.results.contents.every((r) => !r.drawn),
+            "no result marked drawn",
+          );
+          assert.equal(
+            (game as unknown as { messages: { size: number } }).messages.size,
+            messagesBefore,
+            "no chat messages posted",
+          );
+        });
+
+        it("quantity formulas with @references are rejected before reaching Roll", async () => {
+          const { FoundryTableLookup } = await import("../foundry/table-resolver.js");
+          const lookup = new FoundryTableLookup();
+          let threw = false;
+          try {
+            await lookup.rollFormula("1d4+@abilities.str.mod", "quantity");
+          } catch {
+            threw = true;
+          }
+          assert.isTrue(threw, "formula rejected");
+          const ok = await lookup.rollFormula("1d4+1", "quantity");
+          assert.ok(ok.total >= 2 && ok.total <= 5, `total ${ok.total} within bounds`);
+        });
+      });
+    },
+    { displayName: "PF2e Encounter Builder: tables" },
+  );
 }

@@ -38,6 +38,7 @@ import { getSetting } from "../foundry/settings.js";
 import { SETTINGS } from "../constants.js";
 import { GeneratorPanel } from "./generator-panel.js";
 import { DeployPanel } from "./deploy-panel.js";
+import { TablesPanel } from "./tables-panel.js";
 
 const TEMPLATES = `modules/${MODULE_ID}/templates/builder`;
 
@@ -123,6 +124,7 @@ export class EncounterBuilderApp extends Base {
   extensions: Record<string, unknown> = {
     generator: new GeneratorPanel(this),
     deploy: new DeployPanel(this),
+    tables: new TablesPanel(this),
   };
 
   static async open(): Promise<EncounterBuilderApp | null> {
