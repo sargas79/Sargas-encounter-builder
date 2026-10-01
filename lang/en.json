@@ -1,0 +1,31 @@
+{
+  "pf2e-encounter-builder": {
+    "app": { "title": "Encounter Builder" },
+    "errors": { "gmOnly": "Only a Gamemaster can use the Encounter Builder." },
+    "migrations": {
+      "failed": "PF2e Encounter Builder: data migration {version} failed. See the console for details."
+    },
+    "settings": {
+      "tableMaxDepth": {
+        "name": "Encounter tables: maximum nesting depth",
+        "hint": "Stop resolving nested encounter tables beyond this depth."
+      },
+      "tableMaxQuantityPerEntry": {
+        "name": "Encounter tables: maximum creatures per entry",
+        "hint": "A quantity roll above this value stops resolution with an error."
+      },
+      "tableMaxTotalCreatures": {
+        "name": "Encounter tables: maximum creatures per result",
+        "hint": "Stop resolution when the total number of resolved creatures exceeds this value."
+      },
+      "numberDuplicateTokens": {
+        "name": "Number duplicate tokens",
+        "hint": "When deploying several tokens of the same creature, append 1, 2, 3… to their names."
+      },
+      "debugMode": {
+        "name": "Debug mode",
+        "hint": "Cross-check XP totals against the PF2e system helper and log extra diagnostics."
+      }
+    }
+  }
+}

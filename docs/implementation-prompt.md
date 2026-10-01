@@ -24,10 +24,10 @@ You are a senior Foundry VTT and Pathfinder Second Edition module developer. Imp
 ### 0.2 Licensing and data sources
 
 - **ORC (Open RPG Creative License).** Paizo publishes Remaster rules under the ORC. The module may use ORC Licensed Material (game mechanics such as the XP budget and creature XP tables) as long as it:
-  - includes the ORC License notice in a `LICENSE-ORC.md` (or an ORC section in the README) that identifies which material is ORC Licensed Material and credits the source books (e.g. *Pathfinder GM Core*, Paizo Inc.);
+  - includes the ORC License notice in a `LICENSE-ORC.md` (or an ORC section in the README) that identifies which material is ORC Licensed Material and credits the source books (e.g. _Pathfinder GM Core_, Paizo Inc.);
   - does not use **Reserved Material** (Paizo trademarks, setting proper names, deities, characters, artwork, trade dress) beyond what the license and Paizo's community use policy allow;
   - keeps ORC material clearly separated from the MIT-licensed code (e.g. rule constants in `src/rules/` with a header comment naming the source and license).
-  Read the actual ORC license text and record the notice wording in the repo; do not paraphrase its requirements from memory.
+    Read the actual ORC license text and record the notice wording in the repo; do not paraphrase its requirements from memory.
 - **Archives of Nethys.** Use AoN pages as the human-readable reference to confirm the rule constants in §4.1 and cite them in the ORC attribution. Do not scrape AoN, call its internal search endpoints, or fetch it at runtime: it is not a published data API, and its terms for automated access are not established here.
 - **Creature data.** Comes from the PF2e system compendia installed in the GM's world (which the system itself licenses under ORC/OGL). Do not bundle creature data in the first release. If bundled content is wanted later, source it from the PF2e system repository's pack data (which carries explicit license files) rather than from AoN, and carry its license and attribution forward.
 
@@ -53,7 +53,7 @@ Main workflow: select party → select manual, balanced random, or table-driven 
 ### 3.1 Sources
 
 - **Primary source: PF2e's native Party actor** (`type: "party"`). Verify its member storage and accessor (e.g. `members`) in the targeted PF2e source. The GM can select any Party actor as the active party; the module reads members live.
-- **Module party profiles** (world setting) exist for cases the Party actor doesn't cover: excluding a member from this encounter without editing the Party actor, or composing an ad-hoc group. A profile is either *linked* (a Party actor UUID plus per-member participation overrides) or *standalone* (a list of Actor UUIDs). Profiles never copy character sheet data.
+- **Module party profiles** (world setting) exist for cases the Party actor doesn't cover: excluding a member from this encounter without editing the Party actor, or composing an ad-hoc group. A profile is either _linked_ (a Party actor UUID plus per-member participation overrides) or _standalone_ (a list of Actor UUIDs). Profiles never copy character sheet data.
 
 ### 3.2 Membership rules
 
@@ -79,25 +79,25 @@ Implement as pure, independently unit-tested functions with no Foundry globals.
 
 ### 4.1 Constants (verify against the cited rules pages before coding)
 
-| Threat | Budget for four characters | Per-character adjustment |
-| --- | ---: | ---: |
-| Trivial | 40 XP (ceiling) | 10 XP |
-| Low | 60 XP | 20 XP |
-| Moderate | 80 XP | 20 XP |
-| Severe | 120 XP | 30 XP |
-| Extreme | 160 XP | 40 XP |
+| Threat   | Budget for four characters | Per-character adjustment |
+| -------- | -------------------------: | -----------------------: |
+| Trivial  |            40 XP (ceiling) |                    10 XP |
+| Low      |                      60 XP |                    20 XP |
+| Moderate |                      80 XP |                    20 XP |
+| Severe   |                     120 XP |                    30 XP |
+| Extreme  |                     160 XP |                    40 XP |
 
-| Creature level − reference level | XP |
-| --- | ---: |
-| −4 | 10 |
-| −3 | 15 |
-| −2 | 20 |
-| −1 | 30 |
-| 0 | 40 |
-| +1 | 60 |
-| +2 | 80 |
-| +3 | 120 |
-| +4 | 160 |
+| Creature level − reference level |  XP |
+| -------------------------------- | --: |
+| −4                               |  10 |
+| −3                               |  15 |
+| −2                               |  20 |
+| −1                               |  30 |
+| 0                                |  40 |
+| +1                               |  60 |
+| +2                               |  80 |
+| +3                               | 120 |
+| +4                               | 160 |
 
 ### 4.2 Target budget
 
@@ -162,8 +162,9 @@ Search and add creatures, adjust quantities, see live evaluation. Unusual compos
 **Inputs:** target threat, active party, selected packs, creature level bounds (relative values are relative to the reference level; absolute values are levels), min/max total creature count, trait/family/environment/rarity filters, composition preference, duplicate cap, excluded creatures, locked entries.
 
 **Hard constraints** (never loosened; violation → explicit failure with reason):
+
 - Locked entries are included unchanged.
-- Total supported XP ≤ the threat's *band ceiling* (see near-fit below); for Trivial, ≤ target.
+- Total supported XP ≤ the threat's _band ceiling_ (see near-fit below); for Trivial, ≤ target.
 - Total creature count within [min, max].
 - Every creature passes all filters and level bounds and is within −4..+4 of the reference level.
 - No excluded creature; no creature exceeding the duplicate cap.
@@ -176,6 +177,7 @@ Search and add creatures, adjust quantities, see live evaluation. Unusual compos
 **Soft preferences** (affect scoring only): closeness to target XP, creature variety, trait coherence, fewer distinct stat blocks for easier running.
 
 **Algorithm (required approach):**
+
 1. Compute remaining budget after locked entries. If locked entries alone exceed the band ceiling → fail with "locked entries exceed budget" and the overage.
 2. Enumerate multisets of relative levels in −4..+4 (respecting level bounds, count limits, and the composition rule) whose XP sum fits the remaining budget. This search space is small; enumerate it exhaustively with pruning and a hard cap on enumerated combinations (e.g. 50,000). If the cap is hit, report it.
 3. Discard level-multisets that the filtered catalog can't fill (count available distinct creatures per level, considering the duplicate cap).
@@ -246,13 +248,13 @@ Record: encounter-check formula and result; each table's UUID and name; dice for
 
 ## 9. Import and scene deployment
 
-| Action | Effect |
-| --- | --- |
-| Add to encounter | Add reference and quantity only |
-| Inspect | Show the source creature sheet (read-only for compendium sources) |
-| Import creatures | Create world Actors from source documents |
-| Place tokens | Create tokens on the selected scene |
-| Add to combat | Add the tokens just placed to a selected or new Combat |
+| Action           | Effect                                                            |
+| ---------------- | ----------------------------------------------------------------- |
+| Add to encounter | Add reference and quantity only                                   |
+| Inspect          | Show the source creature sheet (read-only for compendium sources) |
+| Import creatures | Create world Actors from source documents                         |
+| Place tokens     | Create tokens on the selected scene                               |
+| Add to combat    | Add the tokens just placed to a selected or new Combat            |
 
 - Imports and deployment require explicit GM action.
 - Import policy per run: **reuse existing** (match a world Actor whose `_stats.compendiumSource` — verify the field in the target version — equals the source UUID; never match by name) or **fresh copy**. Imports preserve provenance via the native compendium-source field plus a module flag.
@@ -282,6 +284,7 @@ Services (TypeScript modules under `src/`):
 - `EncounterTableEditor`: ApplicationV2 editor layered on RollTables.
 
 Rules:
+
 - `EncounterBudget` and `EncounterGenerator` import nothing from Foundry. Other services receive Foundry access through thin adapters so they can be tested with mocks.
 - Validate persisted and imported module metadata at boundaries (hand-written validators or a small schema library).
 - Register hooks once; clean up listeners on app close; avoid render loops; never load full packs to browse.

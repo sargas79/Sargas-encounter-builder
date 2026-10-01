@@ -1,0 +1,25 @@
+/**
+ * Module entry point. Registers settings and hooks once; everything else is lazy.
+ */
+import { MODULE_ID } from "./constants.js";
+import { registerSettings } from "./foundry/settings.js";
+import { log } from "./foundry/i18n.js";
+
+let initialized = false;
+
+Hooks.once("init", () => {
+  if (initialized) return;
+  initialized = true;
+  registerSettings();
+  log("initialized");
+});
+
+Hooks.once("ready", async () => {
+  if (!game.user.isGM) return;
+  if (game.system.id !== "pf2e") {
+    console.warn(`${MODULE_ID} | This module requires the PF2e system; most features are disabled.`);
+    return;
+  }
+  const { onReady } = await import("./foundry/bootstrap.js");
+  await onReady();
+});
