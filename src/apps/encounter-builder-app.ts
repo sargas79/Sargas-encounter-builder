@@ -874,7 +874,7 @@ function describePackState(
 export async function promptText(title: string, label: string, initial = ""): Promise<string | null> {
   const result = await DialogV2().prompt({
     window: { title },
-    content: `<div class="form-group"><label>${label}</label><input type="text" name="value" value="${escapeAttr(initial)}" autofocus></div>`,
+    content: `<div class="form-group"><label>${label}</label><input type="text" name="value" value="${escapeHtml(initial)}" autofocus></div>`,
     ok: {
       callback: (_event: Event, button: HTMLButtonElement) =>
         (button.form?.elements.namedItem("value") as HTMLInputElement | null)?.value ?? "",
@@ -891,7 +891,7 @@ export async function promptSelect(
 ): Promise<string | null> {
   if (options.length === 0) return null;
   const opts = options
-    .map((o) => `<option value="${escapeAttr(o.uuid)}">${escapeHtml(o.name)}</option>`)
+    .map((o) => `<option value="${escapeHtml(o.uuid)}">${escapeHtml(o.name)}</option>`)
     .join("");
   const result = await DialogV2().prompt({
     window: { title },
@@ -904,8 +904,3 @@ export async function promptSelect(
   });
   return typeof result === "string" && result ? result : null;
 }
-
-export function escapeAttr(text: string): string {
-  return escapeHtml(text);
-}
-export { escapeHtml };

@@ -291,6 +291,13 @@ export function validateTagStore(raw: unknown): ValidationResult<TagStore> {
   const errors: string[] = [];
   if (!isObject(raw)) return { ok: false, errors: ["not an object"] };
   if (raw.schemaVersion !== 1) errors.push(`unsupported schemaVersion ${String(raw.schemaVersion)}`);
+  // Legacy pre-release shape: { tags: { [uuid]: string[] } } -> convert to entries.
+  if (!Array.isArray(raw.entries) && isObject(raw.tags)) {
+    const entries = Object.entries(raw.tags)
+      .filter(([, tags]) => Array.isArray(tags) && tags.every(isString))
+      .map(([uuid, tags]) => ({ uuid, tags: tags as string[] }));
+    return { ok: true, value: { schemaVersion: 1, entries } };
+  }
   if (!Array.isArray(raw.entries)) errors.push("entries missing");
   else {
     raw.entries.forEach((e, i) => {

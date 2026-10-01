@@ -8,9 +8,11 @@ import { documentClass, ownershipLevels } from "./compat.js";
 
 export class TagStoreService {
   #cache: TagStore | null = null;
+  #byUuid = new Map<string, string[]>();
 
   tagsFor(uuid: string): string[] {
-    return this.load().entries.find((e) => e.uuid === uuid)?.tags ?? [];
+    this.load();
+    return this.#byUuid.get(uuid) ?? [];
   }
 
   allTags(): string[] {
@@ -26,13 +28,13 @@ export class TagStoreService {
     if (raw) {
       const v = validateTagStore(raw);
       if (v.ok) {
-        this.#cache = v.value;
+        this.#setCache(v.value);
         return v.value;
       }
       console.warn(`${MODULE_ID} | Tag store invalid, starting empty`, v.errors);
     }
-    this.#cache = emptyTagStore();
-    return this.#cache;
+    this.#setCache(emptyTagStore());
+    return this.#cache!;
   }
 
   async setTags(uuid: string, tags: string[]): Promise<void> {
@@ -42,12 +44,22 @@ export class TagStoreService {
     store.entries = store.entries.filter((e) => e.uuid !== uuid);
     if (tags.length) store.entries.push({ uuid, tags: [...new Set(tags)].sort() });
     const journal = await this.#ensureJournal();
-    await journal.setFlag(MODULE_ID, FLAGS.tags, store);
-    this.#cache = store;
+    // Atomic wholesale replacement (also drops any legacy keys left in the flag).
+    await journal.update({
+      [`flags.${MODULE_ID}.-=${FLAGS.tags}`]: null,
+      [`flags.${MODULE_ID}.${FLAGS.tags}`]: store,
+    });
+    this.#setCache(store);
   }
 
   invalidate(): void {
     this.#cache = null;
+    this.#byUuid.clear();
+  }
+
+  #setCache(store: TagStore): void {
+    this.#cache = store;
+    this.#byUuid = new Map(store.entries.map((e) => [e.uuid, e.tags]));
   }
 
   #findJournal(): JournalEntryDocument | null {

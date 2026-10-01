@@ -96,8 +96,11 @@ export class JournalRecipeStore implements RecipeStore {
     const journal = game.journal.get(id);
     if (!journal) throw new Error(`recipe ${id} not found`);
     // Replace the flag wholesale: a merge would keep keys (trace, variantOf, generation) the new recipe omits.
-    await journal.update({ name, [`flags.${MODULE_ID}.-=${FLAGS.recipe}`]: null });
-    await journal.setFlag(MODULE_ID, FLAGS.recipe, recipe);
+    await journal.update({
+      name,
+      [`flags.${MODULE_ID}.-=${FLAGS.recipe}`]: null,
+      [`flags.${MODULE_ID}.${FLAGS.recipe}`]: recipe,
+    });
     const page = journal.pages.contents[0];
     if (page)
       await journal.updateEmbeddedDocuments("JournalEntryPage", [

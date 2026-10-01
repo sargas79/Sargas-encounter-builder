@@ -5,7 +5,7 @@
 import type { CompositionPreference } from "../core/schemas.js";
 import { generateEncounter, type GeneratorInput, type GeneratorResult } from "../core/generator.js";
 import { rngFromSeed } from "../core/rng.js";
-import type { Draft, DraftEntry } from "../core/draft.js";
+import { removeEntry, type Draft, type DraftEntry } from "../core/draft.js";
 import { t } from "../foundry/i18n.js";
 import { services } from "../foundry/services.js";
 import { isGM } from "../foundry/compat.js";
@@ -125,9 +125,13 @@ export class GeneratorPanel {
     await this.#run({ replaceUuid: uuid });
   }
 
+  /** Exclude from future generation and drop it from the draft (locked or not) so it cannot survive as locked. */
   async exclude(uuid: string): Promise<void> {
     if (!this.options.excludeUuids.includes(uuid)) this.options.excludeUuids.push(uuid);
-    await this.app.render({ parts: ["build"] });
+    if (this.app.state.draft.entries.some((e) => e.uuid === uuid)) {
+      this.app.setDraft(removeEntry(this.app.state.draft, uuid));
+    }
+    await this.app.render({ parts: ["header", "build", "deploy"] });
   }
 
   async unexclude(uuid: string): Promise<void> {
@@ -177,7 +181,7 @@ export class GeneratorPanel {
           img: e.img,
           packLabel: e.packLabel,
         }));
-      const seed = this.options.seed || (freshSeed || !this.lastSeed ? randomSeed() : this.lastSeed);
+      const seed = this.options.seed || (freshSeed || !this.lastSeed ? randomHexSeed() : this.lastSeed);
       const excludeUuids = [...this.options.excludeUuids, ...(replaceUuid ? [replaceUuid] : [])];
       const input: GeneratorInput = {
         threat: resolved.profile.selectedThreat,
@@ -205,7 +209,7 @@ export class GeneratorPanel {
       this.lastResult = result;
       this.lastSeed = seed;
       if (result.ok) {
-        const previousLocks = new Map(draft.entries.map((e) => [e.uuid, e.locked]));
+        const previousLocks = new Map(draft.entries.map((e) => [e.uuid, e.locked] as const));
         const entries = mergeEntries(result.entries, previousLocks);
         const newDraft: Draft = {
           entries,
@@ -263,7 +267,6 @@ function mergeEntries(
     name: string;
     level: number;
     quantity: number;
-    locked: boolean;
     traits: string[];
     img: string | null;
     packLabel: string | null;
@@ -290,8 +293,4 @@ function mergeEntries(
     }
   }
   return [...map.values()];
-}
-
-function randomSeed(): string {
-  return randomHexSeed();
 }

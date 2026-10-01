@@ -96,8 +96,7 @@ export function validateTable(model: TableModel, context: ValidationContext = {}
   const rows = [...model.rows].sort((a, b) => a.range[0] - b.range[0]);
   for (const row of rows) {
     const [lo, hi] = row.range;
-    const emptyWeightRow = model.mode === "weight" && row.weight <= 0;
-    if (!Number.isInteger(lo) || !Number.isInteger(hi) || (lo > hi && !emptyWeightRow))
+    if (!Number.isInteger(lo) || !Number.isInteger(hi) || lo > hi)
       issues.push({ level: "error", code: "rangeInvalid", rowId: row.id, data: { range: row.range } });
     if (model.mode === "weight" && row.weight <= 0)
       issues.push({ level: "warning", code: "weightZero", rowId: row.id });
@@ -227,7 +226,8 @@ export function rangesFromWeights(
   for (const row of rows) {
     const w = Math.max(0, Math.floor(row.weight));
     if (w === 0) {
-      out.push({ id: row.id, range: [cursor, cursor - 1], formula: "" });
+      // Valid for Foundry's schema (ascending) and never rolled: table totals start at 1.
+      out.push({ id: row.id, range: [0, 0], formula: "" });
       continue;
     }
     out.push({ id: row.id, range: [cursor, cursor + w - 1], formula: "" });

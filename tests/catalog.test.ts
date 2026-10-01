@@ -176,6 +176,14 @@ describe("tag store schema", () => {
     expect(
       validateTagStore({ schemaVersion: 1, entries: [{ uuid: "Compendium.a.b.Actor.c", tags: ["x:y"] }] }).ok,
     ).toBe(true);
-    expect(validateTagStore({ schemaVersion: 1, tags: {} }).ok).toBe(false);
+    const legacy = validateTagStore({
+      schemaVersion: 1,
+      tags: { "Compendium.a.b.Actor.c": ["family:goblinoid"] },
+    });
+    expect(legacy).toEqual({
+      ok: true,
+      value: { schemaVersion: 1, entries: [{ uuid: "Compendium.a.b.Actor.c", tags: ["family:goblinoid"] }] },
+    });
+    expect(validateTagStore({ schemaVersion: 1 }).ok).toBe(false);
   });
 });

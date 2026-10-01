@@ -60,8 +60,8 @@ export class DeployPanel {
         ? `${Math.round(this.origin.x)}, ${Math.round(this.origin.y)}`
         : t("deploy.originCenter"),
       pickingOrigin: this.pickingOrigin,
-      busy: this.busy,
-      canDeploy: !this.busy && preview.blockers.length === 0 && isGM(),
+      busy: this.busy || this.service.busy,
+      canDeploy: !this.busy && !this.service.busy && preview.blockers.length === 0 && isGM(),
       outcome: ledger
         ? {
             summary: ledger.summary(),

@@ -27,9 +27,9 @@ export interface ProfileStore {
 
 export class SettingsProfileStore implements ProfileStore {
   load(): PartyProfile[] {
-    const raw = game.settings.get(MODULE_ID, SETTINGS.partyProfiles) as unknown[];
+    const stored: unknown = game.settings.get(MODULE_ID, SETTINGS.partyProfiles);
     const out: PartyProfile[] = [];
-    for (const r of raw ?? []) {
+    for (const r of Array.isArray(stored) ? stored : []) {
       const v = validatePartyProfile(r);
       if (v.ok) out.push(v.value);
       else console.warn(`${MODULE_ID} | Ignoring invalid party profile`, v.errors, r);
@@ -38,7 +38,8 @@ export class SettingsProfileStore implements ProfileStore {
   }
   async save(profiles: PartyProfile[]): Promise<void> {
     // Preserve records that failed validation (e.g. written by a newer build) instead of dropping them.
-    const raw = (game.settings.get(MODULE_ID, SETTINGS.partyProfiles) as unknown[]) ?? [];
+    const stored: unknown = game.settings.get(MODULE_ID, SETTINGS.partyProfiles);
+    const raw = Array.isArray(stored) ? stored : [];
     const invalid = raw.filter((r) => !validatePartyProfile(r).ok);
     await game.settings.set(MODULE_ID, SETTINGS.partyProfiles, [...profiles, ...invalid]);
   }

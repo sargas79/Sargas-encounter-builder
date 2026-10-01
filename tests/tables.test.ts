@@ -173,7 +173,7 @@ describe("T11: explicit dice ranges and weighted tables resolve with their inten
     expect(rangesFromWeights(rows).map((r) => r.range)).toEqual([
       [1, 3],
       [4, 4],
-      [5, 4],
+      [0, 0],
     ]);
     const t = table("RollTable.w", "1d20", rows, { mode: "weight" });
     const lookup = new FakeLookup({ "RollTable.w": t }, creatures, { table: [4] });
@@ -512,7 +512,7 @@ describe("review fixes", () => {
   it("weight mode: a zero-weight row is a warning, not a range error", () => {
     const rows = [
       row("a", [1, 3], { kind: "none" }, { weight: 3 }),
-      row("z", [4, 3], { kind: "none" }, { weight: 0 }),
+      row("z", [0, 0], { kind: "none" }, { weight: 0 }),
     ];
     const issues = validateTable(table("RollTable.w0", "1d3", rows, { mode: "weight" }));
     expect(issues.some((i) => i.code === "rangeInvalid")).toBe(false);
