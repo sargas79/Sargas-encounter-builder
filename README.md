@@ -4,7 +4,7 @@ A GM workspace for the Pathfinder Second Edition system on Foundry VTT: party pr
 compendium creature browsing, balanced random generation, classic encounter tables, saved encounters,
 and explicit scene deployment.
 
-- Module ID: `pf2e-encounter-builder`
+- Module ID: `sargas-encounter-builder`
 - Target: Foundry VTT 14 (13 minimum) with the PF2e system (7.x or later). **Not yet runtime-verified**;
   see [Status](#status) and [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 - GM only. Players never see the application or the module's documents.
@@ -27,7 +27,7 @@ npm ci
 npm run build
 ```
 
-Then copy these into `Data/modules/pf2e-encounter-builder/`:
+Then copy these into `Data/modules/sargas-encounter-builder/`:
 
 ```
 module.json  dist/  lang/  styles/  templates/

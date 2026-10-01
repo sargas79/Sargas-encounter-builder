@@ -10,7 +10,7 @@ export default defineConfig({
     lib: {
       entry: "src/module.ts",
       formats: ["es"],
-      fileName: () => "pf2e-encounter-builder.js",
+      fileName: () => "sargas-encounter-builder.js",
     },
   },
   test: {

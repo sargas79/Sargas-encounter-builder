@@ -33,7 +33,7 @@ You are a senior Foundry VTT and Pathfinder Second Edition module developer. Imp
 
 ## 1. Target and working rules
 
-- Module ID: `pf2e-encounter-builder`. Namespaced flags, CSS classes, hooks, and settings.
+- Module ID: `sargas-encounter-builder`. Namespaced flags, CSS classes, hooks, and settings.
 - Use ApplicationV2 (with HandlebarsApplicationMixin if templates are used) and supported public document APIs and hooks. No monkey patches or private APIs.
 - Keep all user-facing text localizable; ship English (`lang/en.json`).
 - GM-only module. Note that Foundry's server-side document permissions and world-scoped settings are the real authorization boundary; module-level `game.user.isGM` checks are a UX layer and a defense-in-depth guard on every write path, not a substitute. Do not grant players ownership of any module-created document by default.
@@ -239,7 +239,7 @@ Record: encounter-check formula and result; each table's UUID and name; dice for
 
 ## 8. Saved encounters
 
-- Each saved encounter recipe is a JournalEntry in a module folder ("Encounter Builder: Saved Encounters"), default ownership NONE for non-GMs, with data in a versioned flag (`flags.pf2e-encounter-builder.recipe`, `schemaVersion`).
+- Each saved encounter recipe is a JournalEntry in a module folder ("Encounter Builder: Saved Encounters"), default ownership NONE for non-GMs, with data in a versioned flag (`flags.sargas-encounter-builder.recipe`, `schemaVersion`).
 - Stored: name, entries `{uuid, quantity, locked}`, notes, generation inputs/seed, policy, table trace if any, and an **evaluation snapshot** (party identity, counted members and levels, reference level and policy, threat, target, totals, inferred threat, timestamp).
 - On open: resolve UUIDs and report missing ones; show the saved snapshot; offer "Recalculate for current party", which shows the new evaluation alongside the original and never overwrites the snapshot unless the GM explicitly chooses "Update saved evaluation".
 - Edit, duplicate, rename, delete (with confirmation).

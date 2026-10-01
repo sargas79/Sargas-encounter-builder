@@ -248,7 +248,7 @@ export class GeneratorPanel {
         this.app.pushMessage("error", t(`generator.failure.${result.reason}`, result.detail));
       }
     } catch (error) {
-      console.error("pf2e-encounter-builder | generation failed", error);
+      console.error("sargas-encounter-builder | generation failed", error);
       this.app.pushMessage(
         "error",
         t("errors.generic", { message: error instanceof Error ? error.message : String(error) }),

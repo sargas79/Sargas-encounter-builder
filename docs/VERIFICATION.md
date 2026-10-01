@@ -88,8 +88,8 @@ These are isolated behind `src/foundry/*` adapters and are exercised by the Quen
 ## 5. Runtime verification steps
 
 1. Install Foundry VTT 13 (latest stable) and PF2e 7.x. Note both versions.
-2. Install this module from the repository (`npm ci && npm run build`, then copy `module.json`, `dist/`, `lang/`, `styles/`, `templates/` into `Data/modules/pf2e-encounter-builder/`).
-3. Install and enable the **Quench** module. Open the Quench panel and run the `pf2e-encounter-builder` suites.
+2. Install this module from the repository (`npm ci && npm run build`, then copy `module.json`, `dist/`, `lang/`, `styles/`, `templates/` into `Data/modules/sargas-encounter-builder/`).
+3. Install and enable the **Quench** module. Open the Quench panel and run the `sargas-encounter-builder` suites.
 4. Follow `docs/MANUAL-TESTS.md` for the remaining manual cases and record the Foundry build and PF2e version in the results table.
 5. Only after all suites pass may `module.json`'s `compatibility.verified` be set, to the exact Foundry build used.
 
@@ -102,7 +102,7 @@ Recorded on 2026-10-01 in the build container (Node 22.22.0, no Foundry):
 | `npm test` (Vitest 4)                         | 130 tests, 8 files, all passing                                                        |
 | `npm run lint` (ESLint 9 + typescript-eslint) | clean                                                                                  |
 | `npm run typecheck` (TypeScript 5.9, strict)  | clean                                                                                  |
-| `npm run build` (Vite 7, ES module)           | `dist/pf2e-encounter-builder.js` + lazy chunks                                         |
+| `npm run build` (Vite 7, ES module)           | `dist/sargas-encounter-builder.js` + lazy chunks                                       |
 | Quench suites                                 | **not executed** (no Foundry available); 4 batches registered in `src/quench/tests.ts` |
 | Manual matrix (`docs/MANUAL-TESTS.md`)        | **not executed**                                                                       |
 

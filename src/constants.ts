@@ -1,5 +1,5 @@
 /** Module identifier. Also the namespace for flags, settings, hooks and CSS classes. */
-export const MODULE_ID = "pf2e-encounter-builder" as const;
+export const MODULE_ID = "sargas-encounter-builder" as const;
 
 /** Flag keys used under `flags[MODULE_ID]`. */
 export const FLAGS = {

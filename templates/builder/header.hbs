@@ -1,12 +1,12 @@
 <div class="peb-header">
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.party"}}</label><span class="value">{{header.partyName}}</span> <span class="peb-tags">{{header.source}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.participating"}}</label><span class="value">{{header.participating}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.levels"}}</label><span class="value">{{header.levels}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.reference"}}</label><span class="value">{{header.referenceLevel}}</span> <span class="peb-tags">{{header.policy}}{{#if header.isEstimate}} ({{localize "pf2e-encounter-builder.party.estimate"}}){{/if}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.threat"}}</label><span class="value">{{header.threat}}</span></div>
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.target"}}</label><span class="value">{{header.target}} XP</span></div>
+  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.party"}}</label><span class="value">{{header.partyName}}</span> <span class="peb-tags">{{header.source}}</span></div>
+  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.participating"}}</label><span class="value">{{header.participating}}</span></div>
+  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.levels"}}</label><span class="value">{{header.levels}}</span></div>
+  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.reference"}}</label><span class="value">{{header.referenceLevel}}</span> <span class="peb-tags">{{header.policy}}{{#if header.isEstimate}} ({{localize "sargas-encounter-builder.party.estimate"}}){{/if}}</span></div>
+  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.threat"}}</label><span class="value">{{header.threat}}</span></div>
+  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.target"}}</label><span class="value">{{header.target}} XP</span></div>
   {{#if header.pwol}}
-  <div class="peb-stat"><label>{{localize "pf2e-encounter-builder.header.variant"}}</label><span class="value">{{#if header.systemCalculation}}{{localize "pf2e-encounter-builder.evaluation.pwolSystem"}}{{else}}{{localize "pf2e-encounter-builder.evaluation.pwolUnsupported"}}{{/if}}</span></div>
+  <div class="peb-stat"><label>{{localize "sargas-encounter-builder.header.variant"}}</label><span class="value">{{#if header.systemCalculation}}{{localize "sargas-encounter-builder.evaluation.pwolSystem"}}{{else}}{{localize "sargas-encounter-builder.evaluation.pwolUnsupported"}}{{/if}}</span></div>
   {{/if}}
 </div>
 {{#if messages.length}}

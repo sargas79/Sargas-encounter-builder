@@ -23,7 +23,7 @@ Record the environment for every run. Do not mark a case passed without it.
 | tables             | T17, grammar rejection                                                                   | creates and deletes a temporary RollTable                                                                |
 | persistence        | T18, tag store                                                                           | creates and deletes a temporary Journal Entry                                                            |
 
-Run the **deployment** batch a second time logged in as a **player**: T22 must report that the builder refuses to open and writes are refused (open the Actors sidebar: no button is shown; `game.modules.get("pf2e-encounter-builder")` exposes nothing writable).
+Run the **deployment** batch a second time logged in as a **player**: T22 must report that the builder refuses to open and writes are refused (open the Actors sidebar: no button is shown; `game.modules.get("sargas-encounter-builder")` exposes nothing writable).
 
 ## B. Manual cases
 
@@ -54,7 +54,7 @@ Run the **deployment** batch a second time logged in as a **player**: T22 must r
 | M23 | Combat (T21)                | Deploy with "new combat"                                                                                                                         | Combat exists, not started, no initiative                                                                                                 |        |
 | M24 | Partial failure (T23)       | Lock the destination scene so token creation fails (e.g. deploy to a scene with no room near the origin)                                         | Exact failure list; Cleanup removes only created documents                                                                                |        |
 | M25 | Hex scene                   | Deploy on a hex grid                                                                                                                             | Warning shown; tokens placed; positions sensible                                                                                          |        |
-| M26 | Non-GM (T22)                | As a player: no launcher; `game.settings.set("pf2e-encounter-builder", …)` is refused by the server                                              | Writes refused                                                                                                                            |        |
+| M26 | Non-GM (T22)                | As a player: no launcher; `game.settings.set("sargas-encounter-builder", …)` is refused by the server                                            | Writes refused                                                                                                                            |        |
 | M27 | Debug cross-check (T25)     | Enable Debug mode, build a standard encounter                                                                                                    | No mismatch message; console shows none                                                                                                   |        |
 | M28 | PWL                         | Enable Proficiency Without Level                                                                                                                 | Header shows the variant; evaluation labeled as system calculation (or unsupported if the helper is missing)                              |        |
 
