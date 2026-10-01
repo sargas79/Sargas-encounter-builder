@@ -164,6 +164,9 @@ export class EncounterBuilderApp extends Base {
       const choice = await app.runStartDialog();
       if (!choice) return app.rendered ? app : null;
     }
+    // All data work happens before render(): ApplicationV2 serialises render/close through a
+    // semaphore, so a render awaited from inside _onFirstRender/_onRender deadlocks the window.
+    await app.prepare();
     await app.render({ force: true });
     return app;
   }
@@ -265,16 +268,26 @@ export class EncounterBuilderApp extends Base {
   /*  Lifecycle                                   */
   /* -------------------------------------------- */
 
+  /** Select default packs and resolve the party. Never renders; safe to call before the first render. */
+  async prepare(): Promise<void> {
+    const { catalog } = services();
+    try {
+      await catalog.ensureDefaultSelection();
+    } catch (error) {
+      console.error(`${MODULE_ID} | default pack selection failed`, error);
+    }
+    await this.#resolveParty();
+  }
+
   async _onFirstRender(context: Record<string, unknown>, options: Record<string, unknown>): Promise<void> {
     await super._onFirstRender?.(context, options);
     const { party, catalog } = services();
     const rerender = debounce(() => void this.refreshParty(), 150);
-    this.#unsubscribe.push(
-      party.onChange(rerender),
-      catalog.onChange(() => void this.render({ parts: ["build"] })),
-    );
-    await catalog.ensureDefaultSelection();
-    await this.refreshParty();
+    const rerenderCatalog = debounce(() => {
+      if (this.rendered) void this.render({ parts: ["build", "footer"] });
+    }, 150);
+    this.#unsubscribe.push(party.onChange(rerender), catalog.onChange(rerenderCatalog));
+    // Not awaited: the render it ends with must queue behind this one, not block it.
     void this.#runSearch();
   }
 
@@ -290,27 +303,31 @@ export class EncounterBuilderApp extends Base {
   async _onRender(context: Record<string, unknown>, options: Record<string, unknown>): Promise<void> {
     await super._onRender?.(context, options);
     const root: HTMLElement = this.element;
+    for (const section of root.querySelectorAll<HTMLElement>("section.seb-tab")) {
+      section.classList.toggle("is-active", section.dataset.tab === this.activeTab);
+    }
     if (!this.#listenersAttached) {
       root.addEventListener("change", (event) => void this.#onChange(event));
       root.addEventListener("input", (event) => this.#onInput(event));
       root.addEventListener("keydown", (event) => this.#onKeydown(event));
       this.#listenersAttached = true;
     }
-    const DragDrop = DragDropClass();
-    if (DragDrop) {
-      new DragDrop({
-        dropSelector: ".seb-dropzone",
-        permissions: { dragstart: () => false, drop: () => isGM() },
-        callbacks: { drop: (event: DragEvent) => void this.#onDrop(event) },
-      }).bind(root);
+    try {
+      const DragDrop = DragDropClass();
+      if (DragDrop) {
+        new DragDrop({
+          dropSelector: ".seb-dropzone",
+          permissions: { dragstart: () => false, drop: () => isGM() },
+          callbacks: { drop: (event: DragEvent) => void this.#onDrop(event) },
+        }).bind(root);
+      }
+    } catch (error) {
+      console.error(`${MODULE_ID} | drag-drop binding failed`, error);
     }
     for (const el of root.querySelectorAll<HTMLElement>(".seb-dropzone")) {
       el.addEventListener("dragenter", () => el.classList.add("is-over"));
       el.addEventListener("dragleave", () => el.classList.remove("is-over"));
       el.addEventListener("drop", () => el.classList.remove("is-over"));
-    }
-    for (const section of root.querySelectorAll<HTMLElement>("section.seb-tab")) {
-      section.classList.toggle("is-active", section.dataset.tab === this.activeTab);
     }
   }
 
@@ -323,12 +340,16 @@ export class EncounterBuilderApp extends Base {
     return !!roster && roster.blockers.length === 0 && roster.reference.level !== null;
   }
 
-  async refreshParty(): Promise<void> {
+  async #resolveParty(): Promise<void> {
     const { party } = services();
     this.state.resolved = await party.resolveActive();
     this.recomputeEvaluation();
     if (!this.ready && GATED_TABS.includes(this.activeTab)) this.activeTab = "party";
-    await this.render({ parts: ["header", "tabs", "party", "build", "deploy", "footer"] });
+  }
+
+  async refreshParty(): Promise<void> {
+    await this.#resolveParty();
+    if (this.rendered) await this.render({ parts: ["header", "tabs", "party", "build", "deploy", "footer"] });
   }
 
   recomputeEvaluation(): void {
@@ -396,7 +417,7 @@ export class EncounterBuilderApp extends Base {
       console.error(`${MODULE_ID} | search failed`, error);
       this.state.results = [];
     }
-    await this.render({ parts: ["build"] });
+    if (this.rendered) await this.render({ parts: ["build"] });
   }
 
   /* -------------------------------------------- */
