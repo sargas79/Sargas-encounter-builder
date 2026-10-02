@@ -95,8 +95,33 @@ export interface RecipeV1 {
     diff: VariantDiffEntry[];
   };
   evaluation: EvaluationSnapshot | null;
+  /** Treasure rolled for this encounter (optional; validated loosely, restored best-effort). */
+  treasure?: TreasureRecordV1;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface TreasureRecordV1 {
+  seed: string | null;
+  share: number;
+  options: {
+    allowUncommon: boolean;
+    allowRare: boolean;
+    includeConsumables: boolean;
+    valuablesShare: number;
+    preferTraits: string[];
+    excludeCategories: string[];
+  };
+  entries: {
+    uuid: string;
+    name: string;
+    level: number;
+    price: number;
+    kind: "permanent" | "consumable" | "valuable";
+    slotLevel: number;
+    locked: boolean;
+  }[];
+  coins: { pp: number; gp: number; sp: number; cp: number };
 }
 
 export interface VariantDiffEntry {
@@ -249,8 +274,41 @@ export function validateRecipe(raw: unknown): ValidationResult<Recipe> {
   if (!["manual", "generated", "table", "variant"].includes(raw.origin as string))
     errors.push("origin invalid");
   if (raw.evaluation !== null && !isObject(raw.evaluation)) errors.push("evaluation invalid");
+  if (raw.treasure !== undefined && !isValidTreasureRecord(raw.treasure)) errors.push("treasure invalid");
   if (!isInt(raw.createdAt) || !isInt(raw.updatedAt)) errors.push("timestamps invalid");
   return errors.length ? { ok: false, errors } : { ok: true, value: raw as unknown as Recipe };
+}
+
+export function isValidTreasureRecord(raw: unknown): raw is TreasureRecordV1 {
+  if (!isObject(raw)) return false;
+  if (raw.seed !== null && !isString(raw.seed)) return false;
+  if (typeof raw.share !== "number" || !Number.isFinite(raw.share)) return false;
+  if (!isObject(raw.options) || !Array.isArray(raw.entries) || !isObject(raw.coins)) return false;
+  const o = raw.options;
+  const stringArray = (v: unknown) => Array.isArray(v) && v.every(isString);
+  if (
+    !isBool(o.allowUncommon) ||
+    !isBool(o.allowRare) ||
+    !isBool(o.includeConsumables) ||
+    typeof o.valuablesShare !== "number" ||
+    !stringArray(o.preferTraits) ||
+    !stringArray(o.excludeCategories)
+  )
+    return false;
+  const coins = raw.coins;
+  if (!(["pp", "gp", "sp", "cp"] as const).every((k) => isInt(coins[k]) && (coins[k] as number) >= 0))
+    return false;
+  return raw.entries.every(
+    (e) =>
+      isObject(e) &&
+      isString(e.uuid) &&
+      isString(e.name) &&
+      isInt(e.level) &&
+      typeof e.price === "number" &&
+      ["permanent", "consumable", "valuable"].includes(e.kind as string) &&
+      isInt(e.slotLevel) &&
+      isBool(e.locked),
+  );
 }
 
 export function validateTableFlags(raw: unknown): ValidationResult<TableFlags> {

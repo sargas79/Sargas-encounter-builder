@@ -318,6 +318,10 @@ declare global {
   const Combat: {
     create(data: Record<string, unknown>, operation?: Record<string, unknown>): Promise<CombatDocument>;
   };
+  const ChatMessage: {
+    create(data: Record<string, unknown>, operation?: Record<string, unknown>): Promise<unknown>;
+    getSpeaker(options?: Record<string, unknown>): Record<string, unknown>;
+  };
   const RollTable: {
     create(data: Record<string, unknown>, operation?: Record<string, unknown>): Promise<RollTableDocument>;
   };

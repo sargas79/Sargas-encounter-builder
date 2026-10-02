@@ -42,12 +42,13 @@ import { GeneratorPanel } from "./generator-panel.js";
 import { SavedPanel } from "./saved-panel.js";
 import { showStartDialog, type StartChoice, type StartMode } from "./start-dialog.js";
 import { TablesPanel } from "./tables-panel.js";
+import { TreasurePanel } from "./treasure-panel.js";
 
 const TEMPLATES = `modules/${MODULE_ID}/templates/builder`;
 
-export type TabId = "party" | "build" | "tables" | "saved" | "deploy";
-const TABS: TabId[] = ["party", "build", "tables", "saved", "deploy"];
-const GATED_TABS: TabId[] = ["build", "tables", "deploy"];
+export type TabId = "party" | "build" | "treasure" | "tables" | "saved" | "deploy";
+const TABS: TabId[] = ["party", "build", "treasure", "tables", "saved", "deploy"];
+const GATED_TABS: TabId[] = ["build", "treasure", "tables", "deploy"];
 type BuildMode = "browse" | "generate";
 
 interface Message {
@@ -118,6 +119,7 @@ export class EncounterBuilderApp extends Base {
     tabs: { template: `${TEMPLATES}/tabs.hbs` },
     party: { template: `${TEMPLATES}/party.hbs`, scrollable: [".seb-scroll"] },
     build: { template: `${TEMPLATES}/build.hbs`, scrollable: [".seb-scroll"] },
+    treasure: { template: `${TEMPLATES}/treasure.hbs`, scrollable: [".seb-scroll"] },
     tables: { template: `${TEMPLATES}/tables.hbs`, scrollable: [".seb-scroll"] },
     saved: { template: `${TEMPLATES}/saved.hbs`, scrollable: [".seb-scroll"] },
     deploy: { template: `${TEMPLATES}/deploy.hbs`, scrollable: [".seb-scroll"] },
@@ -143,6 +145,7 @@ export class EncounterBuilderApp extends Base {
     deploy: new DeployPanel(this),
     tables: new TablesPanel(this),
     saved: new SavedPanel(this),
+    treasure: new TreasurePanel(this),
   };
 
   /** Open the workspace. With `withDialog`, run the start dialog first (the launcher does). */
@@ -349,7 +352,8 @@ export class EncounterBuilderApp extends Base {
 
   async refreshParty(): Promise<void> {
     await this.#resolveParty();
-    if (this.rendered) await this.render({ parts: ["header", "tabs", "party", "build", "deploy", "footer"] });
+    if (this.rendered)
+      await this.render({ parts: ["header", "tabs", "party", "build", "treasure", "deploy", "footer"] });
   }
 
   recomputeEvaluation(): void {
@@ -1022,6 +1026,7 @@ export class EncounterBuilderApp extends Base {
 const TAB_ICONS: Record<TabId, string> = {
   party: "fa-solid fa-users",
   build: "fa-solid fa-hammer",
+  treasure: "fa-solid fa-gem",
   tables: "fa-solid fa-table-list",
   saved: "fa-solid fa-folder-open",
   deploy: "fa-solid fa-chess-knight",

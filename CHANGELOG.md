@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- **Treasure tab.** GM Core Table 10-9 budgets for the current party: this encounter's XP share of a
+  level, a whole level, or a custom share. Seeded generation from the PF2e equipment compendium fills
+  permanent and consumable slots without exceeding the total; the rest becomes coins (optionally gems and
+  art objects). Rarity, consumables, theme-trait preference and category exclusions are options. Rows can
+  be locked, replaced or removed. Outputs: a Loot actor, items added to an actor, or a GM chat card.
+  Treasure is saved with the encounter and re-settled against the party when reopened.
+- `LICENSE-ORC.md` now covers `src/rules/treasure-tables.ts`.
+
 ## 0.2.4
 
 - Fixed: Generate (and any action that posts a message or warning) failed with "Template part

@@ -1,0 +1,122 @@
+<section class="seb-tab" data-tab="treasure">
+  {{#unless ready}}
+  <div class="seb-empty seb-gate"><i class="fa-solid fa-lock"></i><p class="seb-empty-title">{{gate.title}}</p><p class="seb-empty-hint">{{gate.hint}}</p><button type="button" class="seb-button seb-button-primary" data-action="changeParty"><i class="fa-solid fa-dragon"></i> {{localize "sargas-encounter-builder.party.startDialog"}}</button></div>
+  {{else}}
+  <div class="seb-columns">
+    <div class="seb-panel">
+      <div class="seb-panel-head">
+        <span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.budgetTitle"}}</span>
+        <span class="seb-panel-actions seb-text-dim">{{localize "sargas-encounter-builder.treasure.catalogCount" count=treasure.catalogCount}}</span>
+      </div>
+
+      <div class="seb-field">
+        <label>{{localize "sargas-encounter-builder.treasure.modeLabel"}}</label>
+        <div class="seb-segments seb-segments-wrap" role="group">
+          {{#each treasure.modes}}<button type="button" class="seb-segment{{#if this.active}} is-active{{/if}}" data-action="ext" data-ext="treasure" data-method="setMode" data-value="{{this.value}}" data-tooltip="{{this.hint}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}">{{this.label}}</button>{{/each}}
+        </div>
+      </div>
+      {{#if treasure.isCustom}}
+      <div class="seb-form-row">
+        <div class="seb-field seb-field-short"><label for="seb-treasure-pct">{{localize "sargas-encounter-builder.treasure.customPercent"}}</label><input id="seb-treasure-pct" type="number" name="treasure.customPercent" min="1" max="400" value="{{treasure.options.customPercent}}"></div>
+      </div>
+      {{/if}}
+      {{#if treasure.isEncounter}}
+      <p class="seb-hint">{{localize "sargas-encounter-builder.treasure.encounterHint" xp=treasure.encounterXP}}</p>
+      {{/if}}
+
+      {{#if treasure.budget}}
+      <div class="seb-treasure-budget">
+        <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.total"}}</span><strong>{{treasure.budget.totalValue}} gp</strong><span class="seb-text-dim">{{localize "sargas-encounter-builder.treasure.ofLevel" percent=treasure.budget.sharePercent total=treasure.budget.perLevelTotal}}</span></div>
+        <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.currency"}}</span><strong>{{treasure.budget.currency}} gp</strong><span class="seb-text-dim">{{#if treasure.budget.extraPCs}}{{localize "sargas-encounter-builder.treasure.extraPCs" count=treasure.budget.extraPCs per=treasure.budget.perExtraPC}}{{else}}{{localize "sargas-encounter-builder.treasure.partyOfFour"}}{{/if}}</span></div>
+        <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.permanent"}}</span><span class="seb-row-pills">{{#each treasure.budget.permanent}}<span class="seb-pill is-level">L{{this.level}} × {{this.expected}}</span>{{/each}}</span></div>
+        <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.consumables"}}</span><span class="seb-row-pills">{{#each treasure.budget.consumables}}<span class="seb-pill is-level">L{{this.level}} × {{this.expected}}</span>{{/each}}</span></div>
+      </div>
+      <p class="seb-hint">{{localize "sargas-encounter-builder.treasure.slotsHint" level=treasure.budget.level}}</p>
+      {{/if}}
+
+      <div class="seb-form-row">
+        <label class="seb-checkbox"><input type="checkbox" name="treasure.allowUncommon" {{#if treasure.options.allowUncommon}}checked{{/if}}> <span>{{localize "sargas-encounter-builder.treasure.allowUncommon"}}</span></label>
+        <label class="seb-checkbox"><input type="checkbox" name="treasure.allowRare" {{#if treasure.options.allowRare}}checked{{/if}}> <span>{{localize "sargas-encounter-builder.treasure.allowRare"}}</span></label>
+        <label class="seb-checkbox"><input type="checkbox" name="treasure.includeConsumables" {{#if treasure.options.includeConsumables}}checked{{/if}}> <span>{{localize "sargas-encounter-builder.treasure.includeConsumables"}}</span></label>
+        <label class="seb-checkbox"><input type="checkbox" name="treasure.useThemeTraits" {{#if treasure.options.useThemeTraits}}checked{{/if}}> <span>{{localize "sargas-encounter-builder.treasure.useThemeTraits"}}{{#if treasure.themeTraits}} <span class="seb-text-dim">({{treasure.themeTraits}})</span>{{/if}}</span></label>
+      </div>
+      <div class="seb-form-row">
+        <div class="seb-field seb-field-short"><label for="seb-treasure-valuables">{{localize "sargas-encounter-builder.treasure.valuablesShare"}}</label><input id="seb-treasure-valuables" type="number" name="treasure.valuablesShare" min="0" max="100" value="{{treasure.valuablesPercent}}"></div>
+        <div class="seb-field seb-field-short"><label for="seb-treasure-seed">{{localize "sargas-encounter-builder.treasure.seed"}}</label><input id="seb-treasure-seed" type="text" name="treasure.seed" value="{{treasure.options.seed}}" placeholder="{{localize 'sargas-encounter-builder.treasure.seedPlaceholder'}}"></div>
+      </div>
+      {{#if treasure.categories.length}}
+      <div class="seb-field">
+        <label>{{localize "sargas-encounter-builder.treasure.categories"}}</label>
+        <div class="seb-chips" role="group">{{#each treasure.categories}}<label class="seb-chip{{#unless this.excluded}} is-active{{/unless}}"><input type="checkbox" class="seb-chip-input" name="treasure.category" data-category="{{this.value}}" {{#unless this.excluded}}checked{{/unless}}> {{this.label}}</label>{{/each}}</div>
+      </div>
+      {{/if}}
+
+      <div class="seb-toolbar">
+        <button type="button" class="seb-button seb-button-primary" data-action="ext" data-ext="treasure" data-method="generate" {{#unless treasure.canGenerate}}disabled{{/unless}}><i class="fa-solid fa-gem"></i> {{localize "sargas-encounter-builder.treasure.generate"}}</button>
+        <button type="button" class="seb-button" data-action="ext" data-ext="treasure" data-method="reroll" {{#unless treasure.hasResult}}disabled{{/unless}} data-tooltip="{{localize 'sargas-encounter-builder.treasure.rerollHint'}}"><i class="fa-solid fa-rotate-right"></i> {{localize "sargas-encounter-builder.treasure.reroll"}}</button>
+        <span class="seb-spacer"></span>
+        <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="treasure" data-method="clear" {{#unless treasure.hasResult}}disabled{{/unless}}><i class="fa-solid fa-xmark"></i> {{localize "sargas-encounter-builder.treasure.clear"}}</button>
+      </div>
+      {{#if treasure.busy}}<div class="seb-note"><i class="fa-solid fa-spinner fa-spin"></i> {{localize "sargas-encounter-builder.treasure.working"}}</div>{{/if}}
+      {{#if treasure.noItems}}<div class="seb-note is-warn">{{localize "sargas-encounter-builder.treasure.noItems"}}</div>{{/if}}
+      <p class="seb-hint">{{localize "sargas-encounter-builder.treasure.rulesHint"}}</p>
+    </div>
+
+    <div class="seb-panel seb-panel-raised">
+      {{#if treasure.result}}
+      <div class="seb-panel-head">
+        <span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.resultTitle"}} <span class="seb-text-dim">· {{treasure.result.count}} {{localize "sargas-encounter-builder.treasure.items"}}{{#if treasure.result.seed}} · {{localize "sargas-encounter-builder.treasure.seed"}} <span class="seb-mono">{{treasure.result.seed}}</span>{{/if}}</span></span>
+        <span class="seb-panel-actions">
+          <button type="button" class="seb-button seb-button-primary seb-button-small" data-action="ext" data-ext="treasure" data-method="createLoot" {{#unless treasure.canOutput}}disabled{{/unless}} data-tooltip="{{localize 'sargas-encounter-builder.treasure.createLootHint'}}"><i class="fa-solid fa-box-open"></i> {{localize "sargas-encounter-builder.treasure.createLoot"}}</button>
+          <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="treasure" data-method="addToActor" {{#unless treasure.canOutput}}disabled{{/unless}} data-tooltip="{{localize 'sargas-encounter-builder.treasure.addToActorHint'}}"><i class="fa-solid fa-sack-dollar"></i> {{localize "sargas-encounter-builder.treasure.addToActor"}}</button>
+          <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="treasure" data-method="postChat" {{#unless treasure.canOutput}}disabled{{/unless}}><i class="fa-solid fa-comment"></i> {{localize "sargas-encounter-builder.treasure.postChat"}}</button>
+        </span>
+      </div>
+
+      <div class="seb-treasure-meter">
+        <div class="seb-treasure-track">
+          <div class="seb-treasure-fill is-items" style="width: {{treasure.result.itemsPct}}%" data-tooltip="{{localize 'sargas-encounter-builder.treasure.itemsValue'}}: {{treasure.result.itemsValue}} gp"></div>
+          <div class="seb-treasure-fill is-valuables" style="width: {{treasure.result.valuablesPct}}%" data-tooltip="{{localize 'sargas-encounter-builder.treasure.valuables'}}: {{treasure.result.valuablesValue}} gp"></div>
+          <div class="seb-treasure-fill is-coins" style="width: {{treasure.result.coinsPct}}%" data-tooltip="{{localize 'sargas-encounter-builder.treasure.coins'}}: {{treasure.result.coins}}"></div>
+        </div>
+        <div class="seb-treasure-legend">
+          <span><i class="seb-swatch is-items"></i> {{localize "sargas-encounter-builder.treasure.itemsValue"}} {{treasure.result.itemsValue}} gp</span>
+          {{#if treasure.result.valuablesValue}}<span><i class="seb-swatch is-valuables"></i> {{localize "sargas-encounter-builder.treasure.valuables"}} {{treasure.result.valuablesValue}} gp</span>{{/if}}
+          <span><i class="seb-swatch is-coins"></i> {{localize "sargas-encounter-builder.treasure.coins"}} {{treasure.result.coins}}</span>
+          <span class="seb-spacer"></span>
+          <span class="seb-text-dim">{{treasure.result.totalValue}} / {{treasure.result.budgetValue}} gp</span>
+        </div>
+      </div>
+
+      <div class="seb-scroll seb-list">
+        {{#each treasure.result.entries}}
+        <div class="seb-row{{#if this.locked}} is-locked{{/if}}" data-uuid="{{this.uuid}}">
+          <img class="seb-portrait" src="{{#if this.img}}{{this.img}}{{else}}icons/svg/item-bag.svg{{/if}}" alt="" loading="lazy">
+          <div class="seb-row-main">
+            <span class="seb-row-name" title="{{this.name}}">{{this.name}}{{#if this.rarityClass}} <span class="seb-pill seb-rarity {{this.rarityClass}}">{{this.rarity}}</span>{{/if}}</span>
+            <span class="seb-row-meta">{{this.kindLabel}} · {{localize "sargas-encounter-builder.build.levelShort" level=this.level}}{{#if this.relaxed}} <span class="seb-text-warn">({{localize "sargas-encounter-builder.treasure.relaxed" level=this.slotLevel}})</span>{{/if}} · {{this.price}} gp</span>
+          </div>
+          <div class="seb-row-controls">
+            <button type="button" class="seb-icon-button" data-action="ext" data-ext="treasure" data-method="inspect" data-tooltip="{{localize 'sargas-encounter-builder.build.inspect'}}" aria-label="{{localize 'sargas-encounter-builder.build.inspect'}}"><i class="fa-solid fa-eye"></i></button>
+            <button type="button" class="seb-icon-button{{#if this.locked}} is-active{{/if}}" data-action="ext" data-ext="treasure" data-method="lock" data-tooltip="{{localize 'sargas-encounter-builder.treasure.lock'}}" aria-label="{{localize 'sargas-encounter-builder.treasure.lock'}}" aria-pressed="{{#if this.locked}}true{{else}}false{{/if}}"><i class="fa-solid {{#if this.locked}}fa-lock{{else}}fa-lock-open{{/if}}"></i></button>
+            <button type="button" class="seb-icon-button" data-action="ext" data-ext="treasure" data-method="replace" data-tooltip="{{localize 'sargas-encounter-builder.treasure.replace'}}" aria-label="{{localize 'sargas-encounter-builder.treasure.replace'}}"><i class="fa-solid fa-shuffle"></i></button>
+            <button type="button" class="seb-icon-button seb-icon-danger" data-action="ext" data-ext="treasure" data-method="remove" data-tooltip="{{localize 'sargas-encounter-builder.treasure.remove'}}" aria-label="{{localize 'sargas-encounter-builder.treasure.remove'}}"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        {{else}}
+        <div class="seb-empty seb-empty-compact"><i class="fa-solid fa-coins"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.treasure.onlyCoinsTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.treasure.onlyCoins"}}</p></div>
+        {{/each}}
+      </div>
+      {{#if treasure.lastOutput}}<div class="seb-note is-ok"><i class="fa-solid fa-check"></i> {{treasure.lastOutput}}</div>{{/if}}
+      <details class="seb-treasure-trace">
+        <summary class="seb-text-dim">{{localize "sargas-encounter-builder.treasure.trace"}}</summary>
+        <pre class="seb-trace">{{#each treasure.result.trace}}{{this}}
+{{/each}}</pre>
+      </details>
+      {{else}}
+      <div class="seb-empty"><i class="fa-solid fa-gem"></i><p class="seb-empty-title">{{localize "sargas-encounter-builder.treasure.emptyTitle"}}</p><p class="seb-empty-hint">{{localize "sargas-encounter-builder.treasure.empty"}}</p></div>
+      {{/if}}
+    </div>
+  </div>
+  {{/unless}}
+</section>

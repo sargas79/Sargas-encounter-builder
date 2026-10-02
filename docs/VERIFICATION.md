@@ -118,6 +118,17 @@ Recorded on 2026-10-01 in the build container (Node 22.22.0, no Foundry):
 - Build-environment results for 0.2.0: 148 Vitest tests passing; lint, typecheck and build clean. Quench and
   the manual matrix (including M29–M39) remain to be run.
 
+## 6c. 0.3.0 treasure
+
+- `src/rules/treasure-tables.ts` reproduces GM Core Table 10-9 from the implementer's knowledge of the
+  book; Archives of Nethys could not be fetched from the build environment. Spot-check at least levels 1,
+  5, 10 and 20 against the printed table before trusting the numbers.
+- Item index fields read from `pf2e.equipment-srd`: `type`, `img`, `system.level.value`,
+  `system.price.value` ({pp,gp,sp,cp}), `system.price.per`, `system.traits.rarity`, `system.traits.value`,
+  `system.stackGroup` ("coins" marks the coin items). Verify on PF2e 8.x that these are index-able and
+  that the coin items are named "Platinum/Gold/Silver/Copper Pieces".
+- Loot actor creation: `type: "loot"`, `system.lootSheetType: "Loot"`, items passed as embedded data.
+
 ## 7. Foundry v14-specific risks to verify first
 
 The code was written against the v13 API surface. On v14 check these before anything else:

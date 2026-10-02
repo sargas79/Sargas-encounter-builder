@@ -9,7 +9,8 @@
       "build": "Build",
       "tables": "Tables",
       "saved": "Saved",
-      "deploy": "Deploy"
+      "deploy": "Deploy",
+      "treasure": "Treasure"
     },
     "gate": {
       "title": "Choose a party to start",
@@ -26,7 +27,12 @@
       "policy": "If levels differ",
       "policyHint": "Used only when the counted characters are not all the same level.",
       "modeLabel": "How do you want to build it?",
-      "mode": { "manual": "Browse", "random": "Generate", "table": "Table", "saved": "Saved" },
+      "mode": {
+        "manual": "Browse",
+        "random": "Generate",
+        "table": "Table",
+        "saved": "Saved"
+      },
       "modeHint": {
         "manual": "Pick creatures from the catalog yourself.",
         "random": "Themed, budget-fitting encounter in one click.",
@@ -93,7 +99,8 @@
       "npc": "NPC",
       "familiar": "familiar",
       "party": "party",
-      "hazard": "hazard"
+      "hazard": "hazard",
+      "loot": "loot"
     },
     "footer": {
       "catalog": "{packs} compendiums · {count} creatures indexed",
@@ -569,6 +576,93 @@
       "cleanup": "Remove documents created by this operation",
       "cleanupHint": "Only documents this operation created are deleted. Reused actors and pre-existing tokens are kept.",
       "cleanupDone": "Cleanup removed {removed} document(s), {failed} failed."
+    },
+    "treasure": {
+      "budgetTitle": "Treasure budget",
+      "catalogCount": "{count} items indexed",
+      "modeLabel": "Award",
+      "mode": {
+        "encounter": "This encounter",
+        "level": "Whole level",
+        "custom": "Custom share"
+      },
+      "modeHint": {
+        "encounter": "Share of a level's treasure equal to the encounter's XP out of 1,000.",
+        "level": "Everything a party should find over one level (GM Core Table 10-9).",
+        "custom": "Any percentage of a level's treasure."
+      },
+      "customPercent": "Share (%)",
+      "encounterHint": "The current encounter is worth {xp} XP for a party of four. A level is about 1,000 XP, so it earns that fraction of the level's treasure.",
+      "total": "Total value",
+      "currency": "Currency",
+      "permanent": "Permanent items",
+      "consumables": "Consumables",
+      "ofLevel": "{percent}% of {total} gp per level",
+      "extraPCs": "{count} beyond four × {per} gp",
+      "partyOfFour": "party of four",
+      "slotsHint": "Slots show expected items by item level for a level-{level} party. Fractions are rolled, so a small share sometimes yields an item and sometimes only coins.",
+      "allowUncommon": "Allow uncommon items",
+      "allowRare": "Allow rare items",
+      "includeConsumables": "Include consumables",
+      "useThemeTraits": "Prefer the encounter's theme traits",
+      "valuablesShare": "Gems & art (% of coins)",
+      "seed": "Seed",
+      "seedPlaceholder": "random",
+      "categories": "Item categories",
+      "category": {
+        "weapon": "Weapons",
+        "armor": "Armor",
+        "shield": "Shields",
+        "equipment": "Equipment & runes",
+        "backpack": "Containers",
+        "consumable": "Consumables",
+        "treasure": "Gems & art"
+      },
+      "generate": "Generate treasure",
+      "reroll": "Reroll",
+      "rerollHint": "New roll; locked rows stay",
+      "clear": "Clear",
+      "working": "Rolling treasure…",
+      "noItems": "The PF2e equipment compendium (pf2e.equipment-srd) was not found; nothing can be rolled.",
+      "rulesHint": "Budgets follow GM Core Table 10-9: currency scales with party size, item slots do not. Items never exceed the total; whatever is left becomes coins.",
+      "resultTitle": "Hoard",
+      "items": "items",
+      "createLoot": "Loot actor",
+      "createLootHint": "Create a Loot actor holding everything (players get no ownership until you grant it)",
+      "createLootTitle": "Create loot actor",
+      "lootNameLabel": "Name",
+      "lootName": "Encounter loot",
+      "lootNameThemed": "{theme} hoard",
+      "lootCreated": "Loot actor \"{name}\" created.",
+      "addToActor": "Add to actor",
+      "addToActorHint": "Add everything to a selected token's actor, or pick one",
+      "addToActorTitle": "Add treasure to an actor",
+      "addToActorLabel": "Actor",
+      "addToActorConfirm": "Add {count} item(s) and the coins to {name}?",
+      "addedToActor": "Added {count} item(s) to {name}.",
+      "postChat": "Chat",
+      "posted": "Treasure card whispered to the GMs.",
+      "itemsValue": "Items",
+      "valuables": "Gems & art",
+      "coins": "Coins",
+      "kind": {
+        "permanent": "Permanent",
+        "consumable": "Consumable",
+        "valuable": "Valuable"
+      },
+      "relaxed": "for a level {level} slot",
+      "lock": "Keep on reroll",
+      "replace": "Replace with another",
+      "remove": "Remove (value returns to coins)",
+      "noReplacement": "No other item fits that slot within the remaining budget.",
+      "onlyCoinsTitle": "Only coins",
+      "onlyCoins": "No item slot was rolled for this share; the whole value is paid in coins. Reroll or raise the share.",
+      "trace": "How this was rolled",
+      "emptyTitle": "No treasure yet",
+      "empty": "Set the award and press Generate treasure. Rows can be locked, replaced or removed before you create the loot.",
+      "restoredTrace": "Restored from the saved encounter and re-settled against the current party.",
+      "restoredMissing": "{count} saved treasure item(s) are no longer in the compendium and were dropped.",
+      "noActors": "No actor to add treasure to: select a token or create a Loot actor first."
     }
   }
 }

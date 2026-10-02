@@ -2,6 +2,7 @@
  * Lazily constructed singletons wiring the services to Foundry. Hooks are registered once.
  */
 import { CreatureCatalog, FoundryPackProvider } from "./creature-catalog.js";
+import { FoundryItemPackProvider, ItemCatalog } from "./item-catalog.js";
 import { PartyService, SettingsProfileStore } from "./party-service.js";
 import { PF2eAdapter } from "./pf2e-adapter.js";
 import { TagStoreService } from "./tag-store.js";
@@ -14,6 +15,7 @@ export interface Services {
   catalog: CreatureCatalog;
   tags: TagStoreService;
   themes: ThemeStoreService;
+  items: ItemCatalog;
 }
 
 let instance: Services | null = null;
@@ -25,8 +27,9 @@ export function services(): Services {
   const themes = new ThemeStoreService();
   const party = new PartyService(adapter, new SettingsProfileStore(), randomID);
   const catalog = new CreatureCatalog(new FoundryPackProvider(), tags);
+  const items = new ItemCatalog(new FoundryItemPackProvider());
   party.registerHooks();
   catalog.registerHooks();
-  instance = { adapter, party, catalog, tags, themes };
+  instance = { adapter, party, catalog, tags, themes, items };
   return instance;
 }
