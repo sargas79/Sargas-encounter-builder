@@ -104,6 +104,8 @@ export interface RecipeV1 {
 export interface TreasureRecordV1 {
   seed: string | null;
   share: number;
+  /** GM-chosen treasure level; absent or null means the party's reference level. */
+  level?: number | null;
   options: {
     allowUncommon: boolean;
     allowRare: boolean;
@@ -283,6 +285,7 @@ export function isValidTreasureRecord(raw: unknown): raw is TreasureRecordV1 {
   if (!isObject(raw)) return false;
   if (raw.seed !== null && !isString(raw.seed)) return false;
   if (typeof raw.share !== "number" || !Number.isFinite(raw.share)) return false;
+  if (raw.level !== undefined && raw.level !== null && !isInt(raw.level)) return false;
   if (!isObject(raw.options) || !Array.isArray(raw.entries) || !isObject(raw.coins)) return false;
   const o = raw.options;
   const stringArray = (v: unknown) => Array.isArray(v) && v.every(isString);

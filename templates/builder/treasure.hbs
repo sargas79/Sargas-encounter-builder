@@ -15,11 +15,19 @@
           {{#each treasure.modes}}<button type="button" class="seb-segment{{#if this.active}} is-active{{/if}}" data-action="ext" data-ext="treasure" data-method="setMode" data-value="{{this.value}}" data-tooltip="{{this.hint}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}">{{this.label}}</button>{{/each}}
         </div>
       </div>
-      {{#if treasure.isCustom}}
       <div class="seb-form-row">
+        <div class="seb-field seb-field-short">
+          <label for="seb-treasure-level">{{localize "sargas-encounter-builder.treasure.level"}}</label>
+          <select id="seb-treasure-level" name="treasure.level">
+            <option value="" {{#if treasure.levelIsParty}}selected{{/if}}>{{localize "sargas-encounter-builder.treasure.levelParty" level=treasure.partyLevel}}</option>
+            {{#each treasure.levels}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.value}}</option>{{/each}}
+          </select>
+        </div>
+        {{#if treasure.isCustom}}
         <div class="seb-field seb-field-short"><label for="seb-treasure-pct">{{localize "sargas-encounter-builder.treasure.customPercent"}}</label><input id="seb-treasure-pct" type="number" name="treasure.customPercent" min="1" max="400" value="{{treasure.options.customPercent}}"></div>
+        {{/if}}
       </div>
-      {{/if}}
+      {{#if treasure.levelDiffers}}<p class="seb-hint seb-text-warn">{{localize "sargas-encounter-builder.treasure.levelDiffers" level=treasure.options.levelOverride party=treasure.partyLevel}}</p>{{/if}}
       {{#if treasure.isEncounter}}
       <p class="seb-hint">{{localize "sargas-encounter-builder.treasure.encounterHint" xp=treasure.encounterXP}}</p>
       {{/if}}

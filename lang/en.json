@@ -600,7 +600,7 @@
       "ofLevel": "{percent}% of {total} gp per level",
       "extraPCs": "{count} beyond four × {per} gp",
       "partyOfFour": "party of four",
-      "slotsHint": "Slots show expected items by item level for a level-{level} party. Fractions are rolled, so a small share sometimes yields an item and sometimes only coins.",
+      "slotsHint": "Slots show expected items by item level for a level-{level} budget. Fractions are rolled, so a small share sometimes yields an item and sometimes only coins.",
       "allowUncommon": "Allow uncommon items",
       "allowRare": "Allow rare items",
       "includeConsumables": "Include consumables",
@@ -662,7 +662,10 @@
       "empty": "Set the award and press Generate treasure. Rows can be locked, replaced or removed before you create the loot.",
       "restoredTrace": "Restored from the saved encounter and re-settled against the current party.",
       "restoredMissing": "{count} saved treasure item(s) are no longer in the compendium and were dropped.",
-      "noActors": "No actor to add treasure to: select a token or create a Loot actor first."
+      "noActors": "No actor to add treasure to: select a token or create a Loot actor first.",
+      "level": "Treasure level",
+      "levelParty": "Party level ({level})",
+      "levelDiffers": "Budget read at level {level} while the party is level {party}: item slots and value follow the chosen level."
     }
   }
 }
