@@ -112,7 +112,8 @@ the meter says _incomplete_ instead.
 ### Treasure
 
 Pick the award: **This encounter** (the draft's XP out of the ~1,000 XP a level takes, so a Moderate fight
-earns 8% of the level's treasure), **Whole level**, or a **Custom share**. The budget card shows total
+earns 8% of the level's treasure), **Whole level**, or a **Custom share**. **Treasure level** defaults to the party's reference level and can be set to any level 1 to
+20 (a hoard from a higher-level foe, or a lower one for a side cache). The budget card shows total
 value, currency (scaled by party size), and the expected permanent and consumable item slots by item
 level. Options: uncommon and rare items, consumables, preferring the encounter theme's traits, a share of
 the coins as gems and art objects, a seed, and item categories to exclude.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Treasure: the GM can choose the treasure level (1 to 20) instead of the party's reference level. The
+  choice is stored with saved encounters.
+
 ## 0.3.0
 
 - **Treasure tab.** GM Core Table 10-9 budgets for the current party: this encounter's XP share of a

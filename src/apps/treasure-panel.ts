@@ -38,6 +38,8 @@ export interface TreasurePanelOptions extends TreasureOptions {
   mode: TreasureMode;
   /** Custom share in percent (1..400). */
   customPercent: number;
+  /** Treasure level override; null follows the party's reference level. */
+  levelOverride: number | null;
   seed: string;
   useThemeTraits: boolean;
 }
@@ -51,6 +53,7 @@ export class TreasurePanel {
     ...DEFAULT_TREASURE_OPTIONS,
     mode: "encounter",
     customPercent: 25,
+    levelOverride: null,
     seed: "",
     useThemeTraits: true,
   };
@@ -93,14 +96,17 @@ export class TreasurePanel {
     return Math.round(raw * Math.max(0.1, Math.min(10, scale)));
   }
 
+  /** Level the budget is read at: the GM's override, else the party's reference level. */
+  level(): number | null {
+    const partyLevel = this.app.state.resolved?.roster.reference.level ?? null;
+    return this.options.levelOverride ?? partyLevel;
+  }
+
   budget(): TreasureBudget | null {
     const roster = this.app.state.resolved?.roster;
-    if (!roster || roster.reference.level === null) return null;
-    return treasureBudget({
-      level: roster.reference.level,
-      partySize: roster.partySize,
-      share: this.share(),
-    });
+    const level = this.level();
+    if (!roster || level === null) return null;
+    return treasureBudget({ level, partySize: roster.partySize, share: this.share() });
   }
 
   #themeTraits(): string[] {
@@ -135,8 +141,16 @@ export class TreasurePanel {
     const result = this.result;
     const xp = this.encounterXP();
     const categories = items.categories();
+    const partyLevel = this.app.state.resolved?.roster.reference.level ?? null;
     return {
       options: this.options,
+      levels: Array.from({ length: 20 }, (_, i) => ({
+        value: i + 1,
+        selected: this.options.levelOverride === i + 1,
+      })),
+      partyLevel,
+      levelIsParty: this.options.levelOverride === null,
+      levelDiffers: this.options.levelOverride !== null && this.options.levelOverride !== partyLevel,
       modes: (["encounter", "level", "custom"] as TreasureMode[]).map((value) => ({
         value,
         label: t(`treasure.mode.${value}`),
@@ -176,6 +190,9 @@ export class TreasurePanel {
     switch (key) {
       case "customPercent":
         this.options.customPercent = clampInt(value, 1, 400, 25);
+        break;
+      case "level":
+        this.options.levelOverride = value === "" ? null : clampInt(value, 1, 20, 1);
         break;
       case "seed":
         this.options.seed = value.trim();
@@ -391,6 +408,7 @@ export class TreasurePanel {
     return {
       seed: r.seed,
       share: r.budget.share,
+      level: this.options.levelOverride,
       options: {
         allowUncommon: this.options.allowUncommon,
         allowRare: this.options.allowRare,
@@ -424,8 +442,9 @@ export class TreasurePanel {
     if (!roster || roster.reference.level === null) return;
     const { items } = services();
     await items.ensureLoaded();
+    const levelOverride = typeof record.level === "number" ? record.level : null;
     const budget = treasureBudget({
-      level: roster.reference.level,
+      level: levelOverride ?? roster.reference.level,
       partySize: roster.partySize,
       share: record.share,
     });
@@ -434,6 +453,7 @@ export class TreasurePanel {
       ...record.options,
       mode: "custom",
       customPercent: Math.round(record.share * 100),
+      levelOverride,
     };
     const entries: TreasureEntry[] = [];
     let missing = 0;
