@@ -233,13 +233,22 @@ export function replaceTreasureEntry(
   if (index < 0) return null;
   const old = result.entries[index]!;
   const chosen = new Set(result.entries.map((e) => e.uuid));
-  const others = result.entries.filter((e) => e.uuid !== uuid).reduce((n, e) => n + e.price, 0);
-  const room = round2(result.budget.totalValue - others);
+  const others = result.entries.filter((e) => e.uuid !== uuid);
+  const othersValue = others.reduce((n, e) => n + e.price, 0);
+  const room = round2(result.budget.totalValue - othersValue);
   const eligible = candidates.filter((c) => isEligible(c, options));
-  const pickResult =
-    old.kind === "valuable"
-      ? pickValuable(eligible, room, chosen, rng)
-      : pickForSlot(eligible, old.kind, old.slotLevel, room, chosen, options, rng);
+  let pickResult: { candidate: TreasureCandidate } | null;
+  if (old.kind === "valuable") {
+    // A replacement gem stays inside the gems-and-art share, never the whole purse.
+    const itemsValue = others.filter((e) => e.kind !== "valuable").reduce((n, e) => n + e.price, 0);
+    const otherValuables = others.filter((e) => e.kind === "valuable").reduce((n, e) => n + e.price, 0);
+    const currency = Math.max(0, result.budget.totalValue - itemsValue);
+    const target = currency * Math.max(0, Math.min(1, options.valuablesShare));
+    const valuableRoom = Math.min(room, Math.max(old.price, round2(target - otherValuables)));
+    pickResult = pickValuable(eligible, valuableRoom, chosen, rng);
+  } else {
+    pickResult = pickForSlot(eligible, old.kind, old.slotLevel, room, chosen, options, rng);
+  }
   if (!pickResult) return null;
   const { candidate } = pickResult;
   const entries = [...result.entries];

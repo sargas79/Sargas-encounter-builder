@@ -665,7 +665,10 @@
       "noActors": "No actor to add treasure to: select a token or create a Loot actor first.",
       "level": "Treasure level",
       "levelParty": "Party level ({level})",
-      "levelDiffers": "Budget read at level {level} while the party is level {party}: item slots and value follow the chosen level."
+      "levelDiffers": "Budget read at level {level} while the party is level {party}: item slots and value follow the chosen level.",
+      "fewerPCs": "{count} below four: −{per} gp each",
+      "indexing": "Indexing the equipment compendium…",
+      "staleDraft": "This hoard was rolled for a different encounter. Reroll before saving or deploying it."
     }
   }
 }

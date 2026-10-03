@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.2
+
+Review fixes for the treasure generator:
+
+- Coins are recognised by price, not by English name, so translated compendiums still get their coins.
+- A damaged treasure record no longer hides the whole saved encounter; it is dropped on load instead.
+- Replacing a gem stays inside the gems-and-art share instead of spending the purse.
+- A hoard rolled for one encounter is cleared (encounter mode) or flagged (other modes) when the draft
+  is replaced, so it is not saved onto an unrelated encounter.
+- Saved treasure restores its award mode; small shares no longer show 0%.
+- The equipment index loads in the background with a visible state when the tab opens, and refreshes
+  when the compendium changes.
+- Items priced per stack (ammunition) are budgeted at the stack value that is actually awarded.
+- Parties smaller than four show "below four" currency wording.
+
 ## 0.3.1
 
 - Treasure: the GM can choose the treasure level (1 to 20) instead of the party's reference level. The

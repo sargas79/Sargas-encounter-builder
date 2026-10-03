@@ -35,7 +35,7 @@
       {{#if treasure.budget}}
       <div class="seb-treasure-budget">
         <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.total"}}</span><strong>{{treasure.budget.totalValue}} gp</strong><span class="seb-text-dim">{{localize "sargas-encounter-builder.treasure.ofLevel" percent=treasure.budget.sharePercent total=treasure.budget.perLevelTotal}}</span></div>
-        <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.currency"}}</span><strong>{{treasure.budget.currency}} gp</strong><span class="seb-text-dim">{{#if treasure.budget.extraPCs}}{{localize "sargas-encounter-builder.treasure.extraPCs" count=treasure.budget.extraPCs per=treasure.budget.perExtraPC}}{{else}}{{localize "sargas-encounter-builder.treasure.partyOfFour"}}{{/if}}</span></div>
+        <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.currency"}}</span><strong>{{treasure.budget.currency}} gp</strong><span class="seb-text-dim">{{treasure.budget.partySizeLabel}}</span></div>
         <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.permanent"}}</span><span class="seb-row-pills">{{#each treasure.budget.permanent}}<span class="seb-pill is-level">L{{this.level}} × {{this.expected}}</span>{{/each}}</span></div>
         <div class="seb-treasure-stat"><span class="seb-eyebrow">{{localize "sargas-encounter-builder.treasure.consumables"}}</span><span class="seb-row-pills">{{#each treasure.budget.consumables}}<span class="seb-pill is-level">L{{this.level}} × {{this.expected}}</span>{{/each}}</span></div>
       </div>
@@ -66,6 +66,8 @@
         <button type="button" class="seb-button seb-button-small" data-action="ext" data-ext="treasure" data-method="clear" {{#unless treasure.hasResult}}disabled{{/unless}}><i class="fa-solid fa-xmark"></i> {{localize "sargas-encounter-builder.treasure.clear"}}</button>
       </div>
       {{#if treasure.busy}}<div class="seb-note"><i class="fa-solid fa-spinner fa-spin"></i> {{localize "sargas-encounter-builder.treasure.working"}}</div>{{/if}}
+      {{#if treasure.indexing}}<div class="seb-note"><i class="fa-solid fa-spinner fa-spin"></i> {{localize "sargas-encounter-builder.treasure.indexing"}}</div>{{/if}}
+      {{#if treasure.staleDraft}}<div class="seb-note is-warn"><i class="fa-solid fa-triangle-exclamation"></i> {{localize "sargas-encounter-builder.treasure.staleDraft"}}</div>{{/if}}
       {{#if treasure.noItems}}<div class="seb-note is-warn">{{localize "sargas-encounter-builder.treasure.noItems"}}</div>{{/if}}
       <p class="seb-hint">{{localize "sargas-encounter-builder.treasure.rulesHint"}}</p>
     </div>

@@ -30,6 +30,7 @@ export function services(): Services {
   const items = new ItemCatalog(new FoundryItemPackProvider());
   party.registerHooks();
   catalog.registerHooks();
+  items.registerHooks();
   instance = { adapter, party, catalog, tags, themes, items };
   return instance;
 }
