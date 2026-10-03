@@ -61,6 +61,38 @@ export class TreasurePanel {
   lastSeed: string | null = null;
   busy = false;
   lastOutput: string | null = null;
+  #indexing = false;
+  #rolledForOtherDraft = false;
+
+  /** Load the equipment index once, with a visible busy state, outside the render lifecycle. */
+  async ensureIndex(): Promise<void> {
+    const { items } = services();
+    if (items.loaded() || this.#indexing) return;
+    this.#indexing = true;
+    try {
+      await items.ensureLoaded();
+    } catch (error) {
+      console.error("sargas-encounter-builder | item index failed", error);
+    } finally {
+      this.#indexing = false;
+    }
+    if (this.app.rendered) await this.app.render({ parts: ["treasure"] });
+  }
+
+  onTabShown(tab: string): void {
+    if (tab === "treasure") void this.ensureIndex();
+  }
+
+  /** The draft was swapped for an unrelated one: the current hoard no longer belongs to it. */
+  onDraftReplaced(): void {
+    if (!this.result) return;
+    if (this.options.mode === "encounter") {
+      this.result = null;
+      this.lastOutput = null;
+    } else {
+      this.#rolledForOtherDraft = true;
+    }
+  }
 
   constructor(private readonly app: EncounterBuilderApp) {}
 
@@ -130,14 +162,9 @@ export class TreasurePanel {
     const ready = this.app.ready;
     const budget = ready ? this.budget() : null;
     const { items } = services();
-    // The equipment index loads the first time the tab is shown, not on every workspace render.
-    if (ready && this.app.activeTab === "treasure") {
-      try {
-        await items.ensureLoaded();
-      } catch (error) {
-        console.error("sargas-encounter-builder | item index failed", error);
-      }
-    }
+    const packCount = items.availablePackIds().length;
+    // The index loads in the background the first time the tab is shown; never inside a render.
+    if (ready && this.app.activeTab === "treasure" && !items.loaded()) void this.ensureIndex();
     const result = this.result;
     const xp = this.encounterXP();
     const categories = items.categories();
@@ -169,11 +196,13 @@ export class TreasurePanel {
       })),
       themeTraits: this.#themeTraits().slice(0, 8).join(", "),
       canGenerate:
-        ready && !!budget && budget.totalValue > 0 && !this.busy && items.availablePackIds().length > 0,
+        ready && !!budget && budget.totalValue > 0 && !this.busy && packCount > 0 && items.loaded(),
+      indexing: this.#indexing,
+      staleDraft: !!result && this.#rolledForOtherDraft,
       hasResult: !!result,
       busy: this.busy,
       catalogCount: items.candidates().length,
-      noItems: items.availablePackIds().length === 0,
+      noItems: packCount === 0,
       result: result ? describeResult(result) : null,
       lastSeed: this.lastSeed,
       lastOutput: this.lastOutput,
@@ -263,6 +292,7 @@ export class TreasurePanel {
       });
       this.lastSeed = seed;
       this.lastOutput = null;
+      this.#rolledForOtherDraft = false;
     } catch (error) {
       console.error("sargas-encounter-builder | treasure generation failed", error);
       this.app.pushMessage(
@@ -409,6 +439,7 @@ export class TreasurePanel {
       seed: r.seed,
       share: r.budget.share,
       level: this.options.levelOverride,
+      mode: this.options.mode,
       options: {
         allowUncommon: this.options.allowUncommon,
         allowRare: this.options.allowRare,
@@ -451,10 +482,11 @@ export class TreasurePanel {
     this.options = {
       ...this.options,
       ...record.options,
-      mode: "custom",
-      customPercent: Math.round(record.share * 100),
+      mode: record.mode ?? "custom",
+      customPercent: Math.max(1, Math.round(record.share * 100)),
       levelOverride,
     };
+    this.#rolledForOtherDraft = false;
     const entries: TreasureEntry[] = [];
     let missing = 0;
     for (const saved of record.entries) {
@@ -497,6 +529,12 @@ function describeBudget(b: TreasureBudget): Record<string, unknown> {
     permanent: b.permanent.map((s) => ({ level: s.level, expected: s.expected.toFixed(2) })),
     consumables: b.consumables.map((s) => ({ level: s.level, expected: s.expected.toFixed(2) })),
     extraPCs: b.partySize - 4,
+    partySizeLabel:
+      b.partySize > 4
+        ? t("treasure.extraPCs", { count: b.partySize - 4, per: gp(b.perLevel.perExtraPC) })
+        : b.partySize < 4
+          ? t("treasure.fewerPCs", { count: 4 - b.partySize, per: gp(b.perLevel.perExtraPC) })
+          : t("treasure.partyOfFour"),
   };
 }
 

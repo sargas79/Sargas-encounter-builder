@@ -1,6 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { TREASURE_BY_LEVEL } from "../src/rules/treasure-tables.js";
+import { coinKey, priceInGp, toCandidate } from "../src/foundry/item-catalog.js";
+import { validateRecipe } from "../src/core/schemas.js";
 import { mulberry32 } from "../src/core/rng.js";
 import {
   DEFAULT_TREASURE_OPTIONS,
@@ -245,6 +247,82 @@ describe("review regressions", () => {
     expect(r.itemsValue + r.currencyValue).toBeCloseTo(budget.totalValue, 2);
     expect(r.currencyValue).toBeCloseTo(budget.totalValue, 2);
     expect(coinsToGp(r.coins)).toBeCloseTo(budget.totalValue - 50, 2);
+  });
+});
+
+describe("0.3.2 review regressions", () => {
+  it("recognises coin items by price so translated names still work", () => {
+    const coin = (name: string, value: Record<string, number>) => ({
+      _id: "x",
+      name,
+      type: "treasure",
+      system: { stackGroup: "coins", price: { value } },
+    });
+    expect(coinKey(coin("Monete d'oro", { gp: 1 }))).toBe("gp");
+    expect(coinKey(coin("Platinmünzen", { pp: 1 }))).toBe("pp");
+    expect(coinKey(coin("Silver Pieces", { sp: 1 }))).toBe("sp");
+    expect(coinKey(coin("Copper Pieces", { cp: 1 }))).toBe("cp");
+    expect(
+      coinKey({ _id: "y", name: "Gold Pieces", type: "treasure", system: { stackGroup: null } }),
+    ).toBeNull();
+  });
+
+  it("budgets stack-priced items at the stack value and rounds odd levels", () => {
+    expect(priceInGp({ value: { gp: 5 }, per: 10 })).toBe(5);
+    const c = toCandidate(
+      {
+        _id: "a",
+        name: "Arrows",
+        type: "weapon",
+        system: { level: { value: 1.5 }, price: { value: { sp: 1 }, per: 10 } },
+      },
+      "pack",
+    );
+    expect(c?.level).toBe(2);
+    expect(c?.price).toBe(0.1);
+  });
+
+  it("drops a damaged treasure record without rejecting the saved encounter", () => {
+    const recipe = {
+      schemaVersion: 1,
+      name: "Camp",
+      notes: "",
+      entries: [],
+      origin: "manual",
+      evaluation: null,
+      createdAt: 1,
+      updatedAt: 1,
+      treasure: { seed: null, share: 1, options: { excludeCategories: "armor" }, entries: [], coins: {} },
+    };
+    const v = validateRecipe(recipe);
+    expect(v.ok).toBe(true);
+    if (v.ok) expect(v.value.treasure).toBeUndefined();
+  });
+
+  it("keeps a replaced gem inside the gems-and-art share", () => {
+    const budget = treasureBudget({ level: 5, partySize: 4, share: 1 });
+    const gems = [10, 20, 50, 200, 500, 900].map((p) => candidate(`gem-${p}`, 0, p, "valuable"));
+    const first = generateTreasure({
+      budget,
+      candidates: [...pool().filter((c) => c.kind !== "valuable"), ...gems],
+      options: options({ valuablesShare: 0.1 }),
+      rng: mulberry32(4),
+    });
+    const gem = first.entries.find((e) => e.kind === "valuable");
+    expect(gem).toBeDefined();
+    const currency = budget.totalValue - first.itemsValue;
+    for (let seed = 0; seed < 30; seed++) {
+      const r = replaceTreasureEntry(
+        first,
+        gem!.uuid,
+        gems,
+        options({ valuablesShare: 0.1 }),
+        mulberry32(seed),
+      );
+      if (!r) continue;
+      const valuables = r.entries.filter((e) => e.kind === "valuable").reduce((n, e) => n + e.price, 0);
+      expect(valuables).toBeLessThanOrEqual(Math.max(gem!.price, currency * 0.1) + 0.01);
+    }
   });
 });
 

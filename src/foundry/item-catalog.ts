@@ -71,13 +71,35 @@ export class ItemCatalog {
   #byUuid = new Map<string, TreasureCandidate>();
   #coins: CoinItems | null = null;
   #loading: Promise<void> | null = null;
-  packIds: string[];
+  #hookIds: number[] = [];
+  readonly packIds: readonly string[];
 
   constructor(
     private readonly provider: ItemPackProvider,
-    packIds: string[] = DEFAULT_ITEM_PACKS,
+    packIds: readonly string[] = DEFAULT_ITEM_PACKS,
   ) {
     this.packIds = packIds;
+  }
+
+  /** Drop the index when a document in one of our packs changes (module update, GM edits). */
+  registerHooks(): () => void {
+    if (this.#hookIds.length || typeof Hooks === "undefined") return () => this.unregisterHooks();
+    const handler = (doc: FoundryDocument) => {
+      if (doc.pack && this.packIds.includes(doc.pack)) this.invalidate();
+    };
+    for (const hook of ["createItem", "updateItem", "deleteItem"])
+      this.#hookIds.push(Hooks.on(hook, handler));
+    return () => this.unregisterHooks();
+  }
+
+  unregisterHooks(): void {
+    const names = ["createItem", "updateItem", "deleteItem"];
+    this.#hookIds.forEach((id, i) => Hooks.off(names[i] ?? "updateItem", id));
+    this.#hookIds = [];
+  }
+
+  loaded(): boolean {
+    return this.#entries !== null;
   }
 
   /** Packs that exist in this world among the configured ids. */
@@ -138,11 +160,14 @@ export class ItemCatalog {
 /*  Mapping                                     */
 /* -------------------------------------------- */
 
+/**
+ * Price of the compendium entry as it will be awarded: the listed price buys the listed stack
+ * (`price.per` units, which is also the compendium quantity), so the stack is what the budget pays for.
+ */
 export function priceInGp(price: NonNullable<RawItemIndexEntry["system"]>["price"]): number {
   const v = price?.value ?? {};
   const gp = (v.pp ?? 0) * 10 + (v.gp ?? 0) + (v.sp ?? 0) / 10 + (v.cp ?? 0) / 100;
-  const per = price?.per && price.per > 0 ? price.per : 1;
-  return Math.round((gp / per) * 100) / 100;
+  return Math.round(gp * 100) / 100;
 }
 
 export function kindForType(
@@ -160,7 +185,7 @@ export function toCandidate(entry: RawItemIndexEntry, packId: string): TreasureC
   if (!kind) return null;
   const price = priceInGp(entry.system?.price);
   if (!(price > 0)) return null;
-  const level = Number(entry.system?.level?.value ?? 0);
+  const level = Math.round(Number(entry.system?.level?.value ?? 0));
   return {
     uuid: entry.uuid ?? `Compendium.${packId}.Item.${entry._id}`,
     name: entry.name,
@@ -174,8 +199,15 @@ export function toCandidate(entry: RawItemIndexEntry, packId: string): TreasureC
   };
 }
 
-function coinKey(entry: RawItemIndexEntry): keyof CoinItems | null {
+/**
+ * Which coin an entry is. Decided by its price (one coin of exactly one denomination), which survives
+ * translated compendium names; the English name is only a fallback.
+ */
+export function coinKey(entry: RawItemIndexEntry): keyof CoinItems | null {
   if (entry.type !== "treasure" || entry.system?.stackGroup !== "coins") return null;
+  const v = entry.system?.price?.value ?? {};
+  const denominations = (["pp", "gp", "sp", "cp"] as const).filter((k) => (v[k] ?? 0) > 0);
+  if (denominations.length === 1 && v[denominations[0]!] === 1) return denominations[0]!;
   const name = entry.name.toLowerCase();
   if (name.startsWith("platinum")) return "pp";
   if (name.startsWith("gold")) return "gp";

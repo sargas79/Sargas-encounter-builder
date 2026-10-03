@@ -106,6 +106,8 @@ export interface TreasureRecordV1 {
   share: number;
   /** GM-chosen treasure level; absent or null means the party's reference level. */
   level?: number | null;
+  /** Award mode at save time; absent means "custom" with the saved share. */
+  mode?: "encounter" | "level" | "custom";
   options: {
     allowUncommon: boolean;
     allowRare: boolean;
@@ -276,9 +278,14 @@ export function validateRecipe(raw: unknown): ValidationResult<Recipe> {
   if (!["manual", "generated", "table", "variant"].includes(raw.origin as string))
     errors.push("origin invalid");
   if (raw.evaluation !== null && !isObject(raw.evaluation)) errors.push("evaluation invalid");
-  if (raw.treasure !== undefined && !isValidTreasureRecord(raw.treasure)) errors.push("treasure invalid");
   if (!isInt(raw.createdAt) || !isInt(raw.updatedAt)) errors.push("timestamps invalid");
-  return errors.length ? { ok: false, errors } : { ok: true, value: raw as unknown as Recipe };
+  if (errors.length) return { ok: false, errors };
+  // Treasure is an optional extra: a damaged record is dropped, never the whole encounter.
+  if (raw.treasure !== undefined && !isValidTreasureRecord(raw.treasure)) {
+    const { treasure: _dropped, ...rest } = raw;
+    return { ok: true, value: rest as unknown as Recipe };
+  }
+  return { ok: true, value: raw as unknown as Recipe };
 }
 
 export function isValidTreasureRecord(raw: unknown): raw is TreasureRecordV1 {
@@ -286,6 +293,7 @@ export function isValidTreasureRecord(raw: unknown): raw is TreasureRecordV1 {
   if (raw.seed !== null && !isString(raw.seed)) return false;
   if (typeof raw.share !== "number" || !Number.isFinite(raw.share)) return false;
   if (raw.level !== undefined && raw.level !== null && !isInt(raw.level)) return false;
+  if (raw.mode !== undefined && !["encounter", "level", "custom"].includes(raw.mode as string)) return false;
   if (!isObject(raw.options) || !Array.isArray(raw.entries) || !isObject(raw.coins)) return false;
   const o = raw.options;
   const stringArray = (v: unknown) => Array.isArray(v) && v.every(isString);

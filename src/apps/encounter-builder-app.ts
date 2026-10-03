@@ -401,8 +401,16 @@ export class EncounterBuilderApp extends Base {
   }
 
   setDraft(draft: Draft, { origin }: { origin?: Draft["origin"] } = {}): void {
+    const before = new Set(this.state.draft.entries.map((e) => e.uuid));
     this.state.draft = origin ? { ...draft, origin } : draft;
     this.recomputeEvaluation();
+    // A wholly different encounter (cleared, generated anew, opened from Saved) must not carry the
+    // hoard rolled for the previous one; edits that keep at least one creature keep it.
+    const sharesCreature = draft.entries.some((e) => before.has(e.uuid));
+    if (!sharesCreature) {
+      const treasure = this.extensions.treasure as { onDraftReplaced?: () => void } | undefined;
+      treasure?.onDraftReplaced?.();
+    }
   }
 
   pushMessage(level: Message["level"], text: string): void {
@@ -817,6 +825,8 @@ export class EncounterBuilderApp extends Base {
       return;
     }
     this.activeTab = tab;
+    for (const ext of Object.values(this.extensions))
+      (ext as { onTabShown?: (tab: TabId) => void }).onTabShown?.(tab);
     await this.render({ parts: ["tabs", tab] });
   }
 
